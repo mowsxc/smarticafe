@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "smarticafe-pro",
+  "productName": "smarticafe",
   "version": "0.1.0",
-  "identifier": "com.smarticafe.pro",
+  "identifier": "com.smarticafe",
   "build": {
     "beforeDevCommand": "echo bypass",
     "devUrl": "http://localhost:32520",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "创新意 电竞馆 - Smarticafe Pro",
+        "title": "创新意 电竞馆 - Smarticafe",
         "width": 1440,
         "height": 900,
         "minWidth": 1280,

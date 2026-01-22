@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    smarticafe_pro_lib::run()
+    smarticafe_lib::run()
 }
