@@ -1619,6 +1619,7 @@ fn ensure_auth_seed(conn: &Connection, now: i64) -> Result<(), String> {
     let seeds: Vec<(&str, &str, &str, &str, &str, f64)> = vec![
         ("admin", "admin", "admin", "admin", "管理员", 0.0),
         ("boss", "boss", "boss", "shareholder", "股东", 0.0),
+        ("example", "example", "example", "example", "示例用户", 0.0),
     ];
 
     for (pick_name, password, role, identity, display_name, equity) in seeds.into_iter() {
@@ -1677,6 +1678,7 @@ fn ensure_employees_seed(conn: &Connection, now: i64) -> Result<(), String> {
         ("员工A", 1),
         ("员工B", 2),
         ("员工C", 3),
+        ("示例员工", 4),
     ];
 
     for (name, sort_order) in seeds.into_iter() {
@@ -2780,7 +2782,7 @@ fn operation_logs_list(app: tauri::AppHandle, token: String, limit: Option<i64>)
     Ok(vec![
         OperationLogRow {
             id: 1,
-            user: "莫健".to_string(),
+            user: "admin".to_string(),
             action: "登录系统".to_string(),
             module: "认证".to_string(),
             time: "2026-01-14 09:30:15".to_string(),
@@ -2788,7 +2790,7 @@ fn operation_logs_list(app: tauri::AppHandle, token: String, limit: Option<i64>)
         },
         OperationLogRow {
             id: 2,
-            user: "莫健".to_string(),
+            user: "admin".to_string(),
             action: "修改密码".to_string(),
             module: "用户管理".to_string(),
             time: "2026-01-14 09:25:00".to_string(),
@@ -2796,7 +2798,7 @@ fn operation_logs_list(app: tauri::AppHandle, token: String, limit: Option<i64>)
         },
         OperationLogRow {
             id: 3,
-            user: "朱晓培".to_string(),
+            user: "boss".to_string(),
             action: "登录系统".to_string(),
             module: "认证".to_string(),
             time: "2026-01-14 08:45:22".to_string(),
