@@ -138,13 +138,13 @@ WORK_LOG.md
 todolist.md
 docs/SETUP.md
 docs/SUPABASE_RLS.md
-docs/AI_RULES.md
-AGENTS.md
+/docs/AI_RULES.md
+/AGENTS.md
 
 # ------------------------------------
 # 14. Supabase 本地配置
 # ------------------------------------
-supabase/
+/supabase/
 
 # ------------------------------------
 # 15. 临时 PowerShell 脚本（具体）
