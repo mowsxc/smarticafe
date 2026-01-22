@@ -396,51 +396,6 @@ function parseInventoryRowDynamic(
   };
 }
 
-/**
- * 兼容旧版固定列解析
- */
-function parseInventoryRow(parts: string[]): ParsedInventoryItem | null {
-  // 列: 0=商品名, 1=原数, 2=补货, 3=剩余, 4=销量, 5=售额, 6=库存, 7=进货, 8=兑奖, 9=扣减, 10=单价, 11=规格
-  if (parts.length < 12) return null;
-
-  const productName = parts[0].trim();
-  if (!productName) return null;
-
-  const original = parseNumber(parts[1]) || 0;
-  const restock = parseNumberOrEmpty(parts[2]);
-  const remaining = parseNumberOrEmpty(parts[3]);
-  const sales = parseNumber(parts[4]) || 0;
-  const revenue = parseNumber(parts[5]) || 0;
-  const stockVal = parseNumber(parts[6]) || 0;
-  const purchase = parseNumberOrEmpty(parts[7]);
-  const redeemRaw = parts[8]?.trim() || '';
-  const lossRaw = parts[9]?.trim() || '';
-  const unitPrice = parsePrice(parts[10]) || 0;
-  const spec = parseNumber(parts[11]) || 1;
-
-  // 兑奖换算
-  const { quantity: redeem, amount: redeemAmount } = convertRedeemToQuantity(redeemRaw, unitPrice, productName);
-
-  // 扣减
-  const loss = parseNumberOrEmpty(lossRaw);
-
-  return {
-    productName,
-    original,
-    restock,
-    remaining,
-    sales,
-    revenue,
-    stockVal,
-    purchase,
-    redeem,
-    redeemAmount,
-    loss,
-    unitPrice,
-    spec,
-  };
-}
-
 function parseExpenseRow(parts: string[], startCol: number = 15): ParsedExpense | null {
   // 动态解析支出行
   const validCols: string[] = [];

@@ -124,10 +124,14 @@ verify-*.ps1
 # ------------------------------------
 # 13. AI 辅助工具临时文件
 # ------------------------------------
-.sisyphus/
-.kiro/
-.agent/
-.windsurf/
+.sisyphus/**
+.kiro/**
+.agent/**
+.windsurf/**
+!.sisyphus/README.md
+!.kiro/README.md
+!.agent/README.md
+!.windsurf/README.md
 *.md.bak
 
 # ------------------------------------
