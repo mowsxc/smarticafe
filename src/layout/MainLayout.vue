@@ -639,7 +639,7 @@ const handleNavClick = async (item: any) => {
             </svg>
             <span class="text-gray-400 font-medium">{{ authStore.userProfile?.roleLabel || '' }}</span>
             <span class="text-gray-800 font-bold">{{ authStore.userProfile?.name || '立即登录' }}</span>
-            <span class="text-gray-600">￥10000/200000</span>
+            <span v-if="authStore.isAuthenticated" class="text-gray-600">￥--/--</span>
           </div>
 
           <!-- Divider -->

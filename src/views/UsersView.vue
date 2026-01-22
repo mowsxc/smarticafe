@@ -161,7 +161,7 @@
 
     <!-- Reset Password Modal -->
     <Transition name="fade">
-      <div v-if="showResetDialog" class="fixed inset-0 z-[110] modal-backdrop flex items-center justify-center p-6" @click.self="showResetDialog = false">
+      <div v-if="showResetDialog" class="fixed inset-0 z-110 modal-backdrop flex items-center justify-center p-6" @click.self="showResetDialog = false">
         <div class="glass-card rounded-[32px] w-full max-w-sm overflow-hidden shadow-2xl flex flex-col border border-white/60">
           <div class="px-8 py-6 border-b border-gray-100 bg-white/40">
             <span class="font-black text-xl text-gray-800 tracking-tight">重置访问秘钥</span>

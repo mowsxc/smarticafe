@@ -2815,9 +2815,9 @@ fn api_stats(app: tauri::AppHandle, token: String) -> Result<ApiStats, String> {
 
     // 返回模拟数据
     Ok(ApiStats {
-        total_calls: 1234,
-        errors: 2,
-        avg_response: "45ms".to_string(),
+        total_calls: 0,
+        errors: 0,
+        avg_response: String::new(),
     })
 }
 
@@ -2858,27 +2858,7 @@ fn coupons_list(app: tauri::AppHandle, token: String) -> Result<Vec<CouponRow>, 
     let _conn = open_db(&app)?;
     let _actor_id = auth_resolve_account_id(&token).ok_or_else(|| String::from("unauthorized"))?;
 
-    // 返回模拟数据
-    Ok(vec![
-        CouponRow {
-            id: "coupon_001".to_string(),
-            code: "Voucher20260114A".to_string(),
-            name: "满100减10券".to_string(),
-            face_value: 10.0,
-            status: "unused".to_string(),
-            created_at: now_ts()?,
-            used_at: None,
-        },
-        CouponRow {
-            id: "coupon_002".to_string(),
-            code: "Voucher20260114B".to_string(),
-            name: "满200减20券".to_string(),
-            face_value: 20.0,
-            status: "used".to_string(),
-            created_at: now_ts()?,
-            used_at: Some(now_ts()?),
-        },
-    ])
+    Ok(Vec::new())
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -3203,14 +3183,32 @@ fn finance_dividend_report(app: tauri::AppHandle, token: String, month: String) 
 
     let total_profit = total_income - total_expense;
 
-    // 股东分红（模拟数据）
-    let shareholders = vec![
-        ShareholderDividend { name: "朱".to_string(), equity: 49.0, dividend: total_profit * 0.49 },
-        ShareholderDividend { name: "莫".to_string(), equity: 20.0, dividend: total_profit * 0.20 },
-        ShareholderDividend { name: "崔".to_string(), equity: 15.0, dividend: total_profit * 0.15 },
-        ShareholderDividend { name: "路".to_string(), equity: 12.0, dividend: total_profit * 0.12 },
-        ShareholderDividend { name: "曹".to_string(), equity: 4.0, dividend: total_profit * 0.04 },
-    ];
+    // 股东分红（从本地 SQLite 读取真实数据；不使用任何硬编码示例）
+    // equity 约定为比例（0.0~1.0）。
+    let mut shareholders: Vec<ShareholderDividend> = Vec::new();
+    let mut stmt = conn
+        .prepare(
+            "SELECT display_name, equity FROM auth_accounts WHERE role = 'boss' AND is_active = 1 ORDER BY equity DESC, display_name ASC",
+        )
+        .map_err(|e| format!("prepare finance_dividend_report shareholders: {e}"))?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            let name: String = row.get(0)?;
+            let equity: f64 = row.get(1)?;
+            Ok((name, equity))
+        })
+        .map_err(|e| format!("query finance_dividend_report shareholders: {e}"))?;
+
+    for r in rows {
+        let (name, equity) = r.map_err(|e| format!("row finance_dividend_report shareholders: {e}"))?;
+        let equity_safe = if equity.is_finite() && equity > 0.0 { equity } else { 0.0 };
+        shareholders.push(ShareholderDividend {
+            name,
+            equity: equity_safe,
+            dividend: total_profit * equity_safe,
+        });
+    }
 
     Ok(DividendReport {
         month,
