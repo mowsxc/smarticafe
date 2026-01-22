@@ -74,12 +74,6 @@
                     />
                   </div>
                 </div>
-
-                <!-- Password Hint for Test Users -->
-                <div class="px-2 flex items-center gap-2">
-                  <div class="w-1 h-1 rounded-full bg-orange-400"></div>
-                  <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">HINT: Test Password is "laoban" or name pinyin</span>
-                </div>
               </div>
             </Transition>
 
@@ -134,6 +128,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { ACCOUNTS } from '../config/accounts';
 
 interface Props {
   isOpen: boolean;
@@ -155,10 +150,10 @@ const password = ref('');
 const errorMessage = ref('');
 
 // Employee list (can login without password)
-const employees = ['黄河', '刘杰', '贾政华', '秦佳', '史红'];
+const employees = ACCOUNTS.employees.map((e) => e.username);
 
 // Shareholder list (need password)
-const shareholders = ['莫健', '朱晓培'];
+const shareholders = ACCOUNTS.shareholders.map((s) => s.displayName);
 
 // Determine user type based on username
 const userType = computed(() => {

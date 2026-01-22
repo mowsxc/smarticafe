@@ -14,9 +14,6 @@
         <div class="user-info">
           <div class="user-name">
             <span class="name-text">{{ user.displayName }}</span>
-            <span v-if="user.equityPercentage" class="equity-badge" :class="equityClass">
-              {{ (user.equityPercentage * 100).toFixed(0) }}%
-            </span>
           </div>
           <div class="user-role">
             <span class="role-icon">{{ roleIcon }}</span>
@@ -64,19 +61,6 @@
               </div>
             </div>
             
-            <div class="stat-item" v-if="user.equityPercentage">
-              <div class="stat-icon stat-icon--equity">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="1" x2="12" y2="23"></line>
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                </svg>
-              </div>
-              <div class="stat-info">
-                <span class="stat-value">{{ (user.equityPercentage * 100).toFixed(0) }}%</span>
-                <span class="stat-label">股份占比</span>
-              </div>
-            </div>
-            
             <div class="stat-item">
               <div class="stat-icon stat-icon--orders">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -89,21 +73,6 @@
                 <span class="stat-value">{{ orderCount }}</span>
                 <span class="stat-label">本月订单</span>
               </div>
-            </div>
-          </div>
-          
-          <!-- Progress Bar (For Equity) -->
-          <div v-if="user.equityPercentage" class="equity-progress">
-            <div class="progress-header">
-              <span class="progress-title">股份分布</span>
-              <span class="progress-value">{{ (user.equityPercentage * 100).toFixed(1) }}%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: `${user.equityPercentage * 100}%` }"></div>
-            </div>
-            <div class="progress-footer">
-              <span class="progress-label">年度分红预估</span>
-              <span class="progress-amount">¥{{ dividendEstimate.toFixed(2) }}</span>
             </div>
           </div>
           
@@ -157,12 +126,6 @@ const loginCount = ref(18)
 const workHours = ref(156)
 const orderCount = ref(324)
 
-// Mock dividend estimate (based on monthly revenue)
-const dividendEstimate = computed(() => {
-  if (!user.value?.equityPercentage) return 0
-  return user.value.equityPercentage * 12800 // Mock monthly revenue
-})
-
 const roleLabel = computed(() => {
   if (!user.value) return ''
   const labels: Record<string, string> = {
@@ -181,13 +144,6 @@ const roleIcon = computed(() => {
     employee: '👤',
   }
   return icons[user.value.role] || '👤'
-})
-
-const equityClass = computed(() => {
-  if (!user.value?.equityPercentage) return ''
-  if (user.value.equityPercentage >= 0.2) return 'equity-badge--gold'
-  if (user.value.equityPercentage >= 0.1) return 'equity-badge--silver'
-  return 'equity-badge--bronze'
 })
 
 const toggleExpand = () => {

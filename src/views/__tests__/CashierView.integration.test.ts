@@ -338,8 +338,8 @@ describe('CashierView Integration Tests', () => {
       const handoverData = {
         date: '2026-01-16',
         shift: '白班',
-        cashier: '莫健',
-        successor: '崔国丽',
+        cashier: '管理员',
+        successor: '员工A',
         internetFee: 100,
         merchandiseSales: 500,
         meituanRevenue: 150,
@@ -400,8 +400,8 @@ describe('CashierView Integration Tests', () => {
       const handoverData = {
         date: '2026-01-16',
         shift: '白班',
-        cashier: '莫健',
-        successor: '崔国丽',
+        cashier: '管理员',
+        successor: '员工A',
         internetFee: 100,
         merchandiseSales: 500,
         meituanRevenue: 150,
@@ -425,8 +425,8 @@ describe('CashierView Integration Tests', () => {
       // 验证快照包含所有信息
       expect(snapshot.date).toBe('2026-01-16')
       expect(snapshot.shift).toBe('白班')
-      expect(snapshot.cashier).toBe('莫健')
-      expect(snapshot.successor).toBe('崔国丽')
+      expect(snapshot.cashier).toBe('管理员')
+      expect(snapshot.successor).toBe('员工A')
       expect(snapshot.internetFee).toBe(100)
       expect(snapshot.merchandiseSales).toBe(500)
       expect(snapshot.meituanRevenue).toBe(150)
@@ -448,7 +448,7 @@ describe('CashierView Integration Tests', () => {
     it('should download snapshot with correct filename', () => {
       const date = '2026-01-16'
       const shift = '白班'
-      const cashier = '莫健'
+      const cashier = '管理员'
 
       // 生成文件名
       const filename = `班次快照_${date}_${shift}_${cashier}.html`
@@ -457,7 +457,7 @@ describe('CashierView Integration Tests', () => {
       expect(filename).toMatch(/^班次快照_\d{4}-\d{2}-\d{2}_.+\.html$/)
       expect(filename).toContain('2026-01-16')
       expect(filename).toContain('白班')
-      expect(filename).toContain('莫健')
+      expect(filename).toContain('管理员')
     })
 
     /**
@@ -474,7 +474,7 @@ describe('CashierView Integration Tests', () => {
     it('should logout after successful handover', () => {
       // 初始状态：已登录
       let isLoggedIn = true
-      let currentUser: string | null = '莫健'
+      let currentUser: string | null = '管理员'
 
       // 交班成功
       const handoverSuccess = true
@@ -536,8 +536,8 @@ describe('CashierView Integration Tests', () => {
       const handoverData = {
         date: '2026-01-16',
         shift: '白班',
-        cashier: '莫健',
-        successor: '崔国丽',
+        cashier: '管理员',
+        successor: '员工A',
         internetFee: 100,
         merchandiseSales: 500,
         meituanRevenue: 150,

@@ -219,15 +219,10 @@ const loadUsers = async () => {
   
   // Load users with real data structure
   users.value = [
-    // 股东（明面）
-    { id: '1', pick_name: 'mojian', display_name: '莫健', role: 'admin', identity: '老板/超管', equity: 0.25, is_active: true },
-    { id: '2', pick_name: 'zhuxiaopei', display_name: '朱晓培', role: 'boss', identity: '股东', equity: 0.30, is_active: true },
-    // 正式员工
-    { id: '3', pick_name: 'huanghe', display_name: '黄河', role: 'employee', identity: '收银员', equity: 0, is_active: true },
-    { id: '4', pick_name: 'liujie', display_name: '刘杰', role: 'employee', identity: '收银员', equity: 0, is_active: true },
-    { id: '5', pick_name: 'jiazhenhua', display_name: '贾政华', role: 'employee', identity: '收银员', equity: 0, is_active: true },
-    { id: '6', pick_name: 'qinjia', display_name: '秦佳', role: 'employee', identity: '收银员', equity: 0, is_active: true },
-    { id: '7', pick_name: 'shihong', display_name: '史红', role: 'employee', identity: '收银员', equity: 0, is_active: true },
+    { id: '1', pick_name: 'admin', display_name: '管理员', role: 'admin', identity: '系统管理员', equity: 0, is_active: true },
+    { id: '2', pick_name: 'boss_a', display_name: '股东A', role: 'boss', identity: '股东', equity: 0, is_active: true },
+    { id: '3', pick_name: 'emp_a', display_name: '员工A', role: 'employee', identity: '收银员', equity: 0, is_active: true },
+    { id: '4', pick_name: 'emp_b', display_name: '员工B', role: 'employee', identity: '收银员', equity: 0, is_active: true },
   ];
   loading.value = false;
 };

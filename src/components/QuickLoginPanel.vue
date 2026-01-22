@@ -61,41 +61,13 @@
 
               <div class="grid grid-cols-2 gap-3">
                 <button 
-                  @click="handleLogin('莫健')"
+                  v-for="name in shareholders"
+                  :key="name"
+                  @click="handleLogin(name)"
                   class="h-14 rounded-xl text-[14px] font-bold text-gray-700 bg-white/60 border border-white hover:bg-brand-dark hover:text-white shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
                 >
-                  <span class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center text-[12px] font-black">莫</span>
-                  莫健
-                </button>
-                <button 
-                  @click="handleLogin('朱晓培')"
-                  class="h-14 rounded-xl text-[14px] font-bold text-gray-700 bg-white/60 border border-white hover:bg-brand-dark hover:text-white shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-[12px] font-black">朱</span>
-                  朱晓培
-                </button>
-              </div>
-            </div>
-
-            <!-- Section: Held Shareholders (for admin) -->
-            <div v-if="showHeldShareholders && mode !== 'successor'" class="space-y-4">
-              <div class="flex items-center gap-4">
-                <div class="h-px flex-1 bg-gray-100"></div>
-                <div class="flex flex-col items-center">
-                  <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-none">代持股东</span>
-                  <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Held Shareholders</span>
-                </div>
-                <div class="h-px flex-1 bg-gray-100"></div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <button 
-                  v-for="holder in heldShareholders"
-                  :key="holder.key"
-                  @click="handleLogin(holder.key)"
-                  class="h-12 rounded-xl text-[12px] font-bold text-gray-600 bg-gray-50 border border-gray-200 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 shadow-sm transition-all duration-200 active:scale-95"
-                >
-                  {{ holder.name }} ({{ (holder.equity * 100).toFixed(0) }}%)
+                  <span class="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center text-[12px] font-black">股</span>
+                  {{ name }}
                 </button>
               </div>
             </div>
@@ -131,8 +103,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { ACCOUNTS } from '../config/accounts';
 
 interface Props {
   isOpen: boolean;
@@ -154,22 +127,11 @@ const emit = defineEmits<Emits>();
 const authStore = useAuthStore();
 
 // Employees (can login directly)
-const employees = ['黄河', '刘杰', '贾政华', '秦佳', '史红'];
+const employees = ACCOUNTS.employees.map((e) => e.username);
 
-// Held shareholders (visible only to admin)
-const heldShareholders = [
-  { key: 'mojian_cuiguoli', name: '崔国丽', equity: 0.20 },
-  { key: 'mojian_luqiumian', name: '路秋勉', equity: 0.13 },
-  { key: 'mojian_caomengsi', name: '曹梦思', equity: 0.10 },
-  { key: 'mojian_moyanfei', name: '莫艳菲', equity: 0.02 },
-];
+const shareholders = ACCOUNTS.shareholders.map((s) => s.displayName);
 
 const errorMessage = ref('');
-
-// Show held shareholders only if admin is logged in
-const showHeldShareholders = computed(() => {
-  return authStore.currentUser?.role === 'admin';
-});
 
 const handleLogin = async (name: string) => {
   errorMessage.value = '';
@@ -183,30 +145,12 @@ const handleLogin = async (name: string) => {
         await authStore.employeeLogin(name);
         emit('login-success', name);
       }
-    } else if (name === '莫健') {
-      // Mo Jian: use stored password or default
-      const password = 'laoban'; // Default to boss role
-      await authStore.mojianLogin(password);
+    } else if (shareholders.includes(name)) {
       if (props.mode === 'successor') {
         emit('select-successor', name);
       } else {
-        emit('login-success', name);
-      }
-    } else if (name === '朱晓培') {
-      // Zhu Xiaopei: direct login
-      if (props.mode === 'successor') {
-        emit('select-successor', name);
-      } else {
-        await authStore.bossLogin('朱晓培', 0.30);
-        emit('login-success', name);
-      }
-    } else if (name.startsWith('mojian_')) {
-      // Held shareholder
-      await authStore.mojianLogin(name);
-      if (props.mode === 'successor') {
-        emit('select-successor', heldShareholders.find(h => h.key === name)?.name || '');
-      } else {
-        emit('login-success', name);
+        // Shareholder login requires password via StandardLoginPanel; quick panel only selects.
+        throw new Error('请使用标准登录输入密码');
       }
     }
     

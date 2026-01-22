@@ -106,6 +106,12 @@ supabase-api-key-password.txt
 *secret*.txt
 *key*.txt
 
+# Private app config (never commit)
+src/config/accounts.local.ts
+
+# Local tooling scripts (never commit)
+scripts/
+
 # ------------------------------------
 # 12. 备份文件和脚本
 # ------------------------------------

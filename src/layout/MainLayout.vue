@@ -631,7 +631,7 @@ const handleNavClick = async (item: any) => {
           <!-- Divider -->
           <div class="w-px h-8 bg-gray-200 rounded-full"></div>
 
-          <!-- User Info (单行显示: 超管 莫健 20% ￥10000/200000) -->
+          <!-- User Info -->
           <div class="flex items-center gap-1.5 text-[11px]">
             <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -639,7 +639,6 @@ const handleNavClick = async (item: any) => {
             </svg>
             <span class="text-gray-400 font-medium">{{ authStore.userProfile?.roleLabel || '' }}</span>
             <span class="text-gray-800 font-bold">{{ authStore.userProfile?.name || '立即登录' }}</span>
-            <span class="text-brand-orange font-medium">{{ authStore.userProfile?.equity || '' }}</span>
             <span class="text-gray-600">￥10000/200000</span>
           </div>
 
@@ -818,13 +817,10 @@ const handleNavClick = async (item: any) => {
                 v-model="editingShift.employee"
                 class="w-full h-11 px-4 rounded-xl border border-gray-200 focus:border-brand-orange/40 focus:ring-4 focus:ring-orange-500/10 outline-none font-mono text-sm"
               >
-                <option value="黄河">黄河</option>
-                <option value="刘杰">刘杰</option>
-                <option value="贾政华">贾政华</option>
-                <option value="秦佳">秦佳</option>
-                <option value="史红">史红</option>
-                <option value="莫健">莫健</option>
-                <option value="朱晓培">朱晓培</option>
+                <option value="管理员">管理员</option>
+                <option value="股东A">股东A</option>
+                <option value="员工A">员工A</option>
+                <option value="员工B">员工B</option>
               </select>
             </div>
           </div>

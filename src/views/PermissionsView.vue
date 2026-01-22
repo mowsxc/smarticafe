@@ -171,12 +171,12 @@ const permissions = ref<Permission[]>([
 ]);
 
 const operationLogs = ref<OperationLog[]>([
-  { id: '1', user: '莫健', action: '修改了', target: '商品: 可口可乐库存', time: '2分钟前' },
-  { id: '2', user: '黄河', action: '完成了', target: '早班交班记录', time: '15分钟前' },
-  { id: '3', user: '莫健', action: '重置了', target: '用户: 刘杰 的密码', time: '1小时前' },
-  { id: '4', user: '朱晓培', action: '查看了', target: '财务支出表', time: '2小时前' },
-  { id: '5', user: '莫健', action: '修改了', target: '权限配置: 财务管理', time: '3小时前' },
-  { id: '6', user: '史红', action: '创建了', target: '商品: 农夫山泉', time: '5小时前' },
+  { id: '1', user: '管理员', action: '修改了', target: '商品: 可口可乐库存', time: '2分钟前' },
+  { id: '2', user: '员工A', action: '完成了', target: '早班交班记录', time: '15分钟前' },
+  { id: '3', user: '管理员', action: '重置了', target: '用户: 员工B 的密码', time: '1小时前' },
+  { id: '4', user: '股东A', action: '查看了', target: '财务支出表', time: '2小时前' },
+  { id: '5', user: '管理员', action: '修改了', target: '权限配置: 财务管理', time: '3小时前' },
+  { id: '6', user: '员工B', action: '创建了', target: '商品: 农夫山泉', time: '5小时前' },
 ]);
 
 onMounted(async () => {

@@ -60,33 +60,22 @@
                  <div class="h-[1px] flex-1 bg-gray-100"></div>
               </div>
               
-               <!-- Shareholder Accounts: Mo Jian & Zhu Xiaopei -->
                <div class="grid grid-cols-2 gap-4">
-                 <button 
-                   @click="selectedAccount = 'mojian'; errorMessage = ''"
-                   :class="[
-                     'h-16 rounded-2xl text-[14px] font-black transition-all flex items-center justify-center gap-3 border-2 relative overflow-hidden',
-                     selectedAccount === 'mojian'
-                       ? 'bg-brand-dark text-white border-brand-dark shadow-2xl scale-[1.02]'
-                       : 'bg-white/40 text-gray-400 border-white hover:border-gray-200 hover:text-gray-600'
-                   ]"
-                 >
-                   <div v-if="selectedAccount === 'mojian'" class="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent pointer-events-none"></div>
-                   莫健
-                 </button>
-                 <button 
-                   @click="selectedAccount = 'zhuxiaopei'; errorMessage = ''"
-                   :class="[
-                     'h-16 rounded-2xl text-[14px] font-black transition-all flex items-center justify-center gap-3 border-2 relative overflow-hidden',
-                     selectedAccount === 'zhuxiaopei'
-                       ? 'bg-brand-dark text-white border-brand-dark shadow-2xl scale-[1.02]'
-                       : 'bg-white/40 text-gray-400 border-white hover:border-gray-200 hover:text-gray-600'
-                   ]"
-                 >
-                   <div v-if="selectedAccount === 'zhuxiaopei'" class="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent pointer-events-none"></div>
-                   朱晓培
-                 </button>
-               </div>
+                <button 
+                  v-for="name in shareholders"
+                  :key="name"
+                  @click="selectedAccount = name; errorMessage = ''"
+                  :class="[
+                    'h-16 rounded-2xl text-[14px] font-black transition-all flex items-center justify-center gap-3 border-2 relative overflow-hidden',
+                    selectedAccount === name
+                      ? 'bg-brand-dark text-white border-brand-dark shadow-2xl scale-[1.02]'
+                      : 'bg-white/40 text-gray-400 border-white hover:border-gray-200 hover:text-gray-600'
+                  ]"
+                >
+                  <div v-if="selectedAccount === name" class="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent pointer-events-none"></div>
+                  {{ name }}
+                </button>
+              </div>
 
               <!-- Password Field with Hint -->
               <div class="relative group mt-6">
@@ -140,6 +129,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { ACCOUNTS } from '../config/accounts';
 
 interface Props {
   isOpen: boolean;
@@ -155,10 +145,10 @@ const emit = defineEmits<Emits>();
 
 const authStore = useAuthStore();
 
-const employees = ['黄河', '刘杰', '贾政华', '秦佳', '史红']; // 正式员工（可登录 + 可接班）
-// 明面股东: 莫健(25%) + 朱晓培(30%) | 代持股东: 崔国丽(20%), 路秋勉(13%), 曹梦思(10%), 莫艳菲(2%) - 代持需通过 mojian_拼音 格式登录
+const employees = ACCOUNTS.employees.map((e) => e.username);
+const shareholders = ACCOUNTS.shareholders.map((s) => s.displayName);
 
-const selectedAccount = ref('mojian');
+const selectedAccount = ref(shareholders[0] || '');
 const password = ref('');
 const errorMessage = ref('');
 
@@ -166,7 +156,7 @@ watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     password.value = '';
     errorMessage.value = '';
-    selectedAccount.value = 'mojian';
+    selectedAccount.value = shareholders[0] || '';
   }
 });
 
@@ -184,18 +174,7 @@ const handleLogin = async () => {
   if (!password.value) return;
   errorMessage.value = '';
   try {
-    // Only mojian uses this - held shareholders use mojian_拼音 format
-    if (selectedAccount.value === 'mojian') {
-      await authStore.mojianLogin(password.value);
-    }
-    // 朱晓培特殊登录 (直接密码)
-    else if (selectedAccount.value === 'zhuxiaopei') {
-      if (password.value === 'zhuxiaopei') {
-        await authStore.bossLogin('朱晓培', 0.30);
-      } else {
-        throw new Error('密码错误');
-      }
-    }
+    await authStore.login(selectedAccount.value, password.value);
     emit('login-success');
     emit('close');
   } catch (error: any) {
