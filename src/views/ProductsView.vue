@@ -1,10 +1,10 @@
 <template>
-  <div class="h-full flex flex-col gap-6 p-6 bg-gradient-to-br from-gray-50 to-orange-50/30 overflow-hidden">
+  <div class="h-full flex flex-col gap-6 p-6 bg-linear-to-br from-gray-50 to-orange-50/30 overflow-hidden">
     <!-- Header Section -->
     <div class="flex items-center justify-between shrink-0">
       <div class="flex flex-col gap-1">
         <h1 class="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-          <span class="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
+          <span class="w-10 h-10 bg-linear-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
             📦
           </span>
           商品管理
@@ -108,7 +108,7 @@
       <!-- Add Product Button -->
       <button
         @click="showAddDialog = true"
-        class="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
+        class="px-6 py-3 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -295,7 +295,7 @@
                 </td>
                 <td class="px-4">
                   <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-xl">
+                    <div class="w-10 h-10 bg-linear-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-xl">
                       {{ getCategoryIcon(product.category) }}
                     </div>
                     <div>
@@ -384,7 +384,7 @@
       >
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all">
           <!-- Dialog Header -->
-          <div class="px-6 py-4 bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-between">
+          <div class="px-6 py-4 bg-linear-to-r from-orange-500 to-orange-600 flex items-center justify-between">
             <h3 class="text-xl font-bold text-white flex items-center gap-2">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -525,7 +525,7 @@
               </button>
               <button
                 type="submit"
-                class="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                class="flex-1 px-6 py-3 bg-linear-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
               >
                 {{ editingProduct ? '保存修改' : '添加商品' }}
               </button>

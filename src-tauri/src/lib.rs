@@ -1615,15 +1615,15 @@ fn pass_hash(salt: &str, password: &str) -> String {
     sha256_hex(&format!("{salt}:{password}"))
 }
 
-fn ensure_auth_seed(conn: &Connection, now: i64) -> Result<(), String> {
+fn ensure_auth_seed(_conn: &Connection, _now: i64) -> Result<(), String> {
     Ok(())
 }
 
-fn ensure_employees_seed(conn: &Connection, now: i64) -> Result<(), String> {
+fn ensure_employees_seed(_conn: &Connection, _now: i64) -> Result<(), String> {
     Ok(())
 }
 
-fn ensure_products_seed(conn: &Connection, now: i64) -> Result<(), String> {
+fn ensure_products_seed(_conn: &Connection, _now: i64) -> Result<(), String> {
     Ok(())
 }
 

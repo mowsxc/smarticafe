@@ -59,11 +59,11 @@
       </div>
       
       <!-- Records Grid -->
-      <div v-else class="grid grid-cols-1 gap-4 pb-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div 
           v-for="record in records" 
           :key="record.id"
-          class="glass-panel rounded-[32px] p-8 border border-white/60 hover:border-brand-orange/30 shadow-xl shadow-black/[0.02] hover:shadow-orange-200/20 transition-all overflow-hidden relative group"
+          class="glass-panel rounded-[32px] p-8 border border-white/60 hover:border-brand-orange/30 shadow-xl shadow-black/2 hover:shadow-orange-200/20 transition-all overflow-hidden relative group"
         >
           <!-- Progress Stripe -->
           <div class="absolute top-0 left-0 bottom-0 w-1.5 bg-brand-orange/20 group-hover:bg-brand-orange transition-colors"></div>

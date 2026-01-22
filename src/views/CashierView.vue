@@ -1564,7 +1564,7 @@ onBeforeUnmount(() => {
           <!-- Left: Inventory Table -->
           <div class="glass-panel rounded-3xl shadow-xl flex flex-col overflow-hidden relative">
             <!-- Background decoration -->
-            <div class="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-brand-orange/10 to-transparent rounded-bl-full pointer-events-none blur-3xl"></div>
+            <div class="absolute top-0 right-0 w-80 h-80 bg-linear-to-br from-brand-orange/10 to-transparent rounded-bl-full pointer-events-none blur-3xl"></div>
             
             <!-- Shift Information & Stats Bar -->
             <div class="bg-white/40 backdrop-blur-md px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -1828,7 +1828,7 @@ onBeforeUnmount(() => {
                 <button 
                   @click="handleHandoverAction"
                   :disabled="isReadonly"
-                  class="h-9 px-6 rounded-xl font-black text-[12px] bg-brand-orange text-white border-brand-orange shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-20 flex-shrink-0"
+                  class="h-9 px-6 rounded-xl font-black text-[12px] bg-brand-orange text-white border-brand-orange shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-20 shrink-0"
                 >
                   交班预览
                 </button>
@@ -2181,9 +2181,9 @@ onBeforeUnmount(() => {
                  :disabled="cart.items.length === 0" 
                  class="h-16 w-full rounded-[28px] bg-brand-dark text-white font-black text-[18px] tracking-[0.3em] shadow-2xl shadow-gray-900/10 active:scale-95 transition-all overflow-hidden relative group"
                >
-                 <div class="absolute inset-0 bg-gradient-to-tr from-brand-orange to-orange-400 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                 <div class="absolute inset-0 bg-linear-to-tr from-brand-orange to-orange-400 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
                  <span class="relative z-10">立即结算 AUTHORIZE</span>
-                 <div class="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"></div>
+                 <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-linear-to-r from-transparent via-white/10 to-transparent pointer-events-none"></div>
                </button>
             </div>
         </div>
@@ -2191,7 +2191,7 @@ onBeforeUnmount(() => {
     </Transition>
     <!-- 套餐配置弹窗 -->
     <Transition name="fade">
-      <div v-if="showPackageModal" class="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center" @click.self="showPackageModal = false">
+      <div v-if="showPackageModal" class="fixed inset-0 z-100 modal-backdrop flex items-center justify-center" @click.self="showPackageModal = false">
         <Transition name="scale" appear>
           <div v-if="showPackageModal" class="glass-card rounded-[40px] w-[900px] max-w-[96vw] max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
             <div class="flex items-center justify-between px-10 py-8 border-b border-gray-100 shrink-0 bg-white/40">
@@ -2246,7 +2246,7 @@ onBeforeUnmount(() => {
     
     <!-- Tax Modal -->
     <Transition name="fade">
-      <div v-if="showTaxModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop" @click.self="showTaxModal = false">
+      <div v-if="showTaxModal" class="fixed inset-0 z-100 flex items-center justify-center p-4 modal-backdrop" @click.self="showTaxModal = false">
         <Transition name="scale" appear>
           <div v-if="showTaxModal" class="w-full max-w-[340px] glass-card rounded-[32px] shadow-2xl overflow-hidden relative" @click.stop>
               <div class="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white/40">

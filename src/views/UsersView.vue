@@ -39,7 +39,7 @@
         <div 
           v-for="user in users" 
           :key="user.id"
-          class="glass-panel rounded-[32xl] p-6 border border-white/60 hover:border-brand-orange/30 shadow-xl shadow-black/[0.02] hover:shadow-orange-200/20 transition-all group relative overflow-hidden flex flex-col h-full"
+          class="glass-panel rounded-[32xl] p-6 border border-white/60 hover:border-brand-orange/30 shadow-xl shadow-black/2 hover:shadow-orange-200/20 transition-all group relative overflow-hidden flex flex-col h-full"
         >
           <!-- Role Indicator Stripe -->
           <div :class="['absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-10 blur-xl', getRoleColorClass(user.role)]"></div>
@@ -49,7 +49,7 @@
             <div class="flex items-start justify-between mb-6">
               <div class="flex items-center gap-4">
                 <div class="relative">
-                  <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-gray-100 to-white flex items-center justify-center text-gray-800 font-black text-xl shadow-inner border border-white">
+                  <div class="w-14 h-14 rounded-2xl bg-linear-to-tr from-gray-100 to-white flex items-center justify-center text-gray-800 font-black text-xl shadow-inner border border-white">
                     {{ (user.display_name[0] || 'U').toUpperCase() }}
                   </div>
                   <div :class="['absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm', user.is_active ? 'bg-emerald-500' : 'bg-gray-300']"></div>
@@ -105,7 +105,7 @@
 
     <!-- Premium Add User Dialog -->
     <Transition name="fade">
-      <div v-if="showAddDialog" class="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6" @click.self="showAddDialog = false">
+      <div v-if="showAddDialog" class="fixed inset-0 z-100 modal-backdrop flex items-center justify-center p-6" @click.self="showAddDialog = false">
         <Transition name="scale" appear>
           <div class="glass-card rounded-[40px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col border border-white/60">
             <div class="px-10 py-8 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white/40">

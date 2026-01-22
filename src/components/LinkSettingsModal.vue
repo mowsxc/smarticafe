@@ -30,7 +30,7 @@ const handleSave = () => {
   <Transition name="modal">
     <div 
       v-if="isOpen" 
-      class="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      class="fixed inset-0 z-9999 flex items-center justify-center p-4"
     >
       <!-- 背景遮罩 -->
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="emit('close')"></div>

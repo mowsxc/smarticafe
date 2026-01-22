@@ -2,7 +2,7 @@
   <Transition name="fade">
     <div 
       v-if="isOpen" 
-      class="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop"
+      class="fixed inset-0 z-100 flex items-center justify-center p-4 modal-backdrop"
       @click.self="emit('close')"
     >
       <!-- Glassmorphism Card -->
@@ -17,7 +17,7 @@
 
           <!-- Header: Branding -->
           <div class="p-10 pb-6 text-center space-y-2">
-            <div class="w-16 h-16 bg-gradient-to-tr from-brand-orange to-orange-400 rounded-2xl mx-auto flex items-center justify-center shadow-xl shadow-orange-200/50 mb-4 animate-float">
+            <div class="w-16 h-16 bg-linear-to-tr from-brand-orange to-orange-400 rounded-2xl mx-auto flex items-center justify-center shadow-xl shadow-orange-200/50 mb-4 animate-float">
                 <span class="text-3xl text-white font-black tracking-tighter">CX</span>
             </div>
             <h2 class="text-2xl font-black text-gray-800 tracking-tight">创新意电竞 Pro</h2>
@@ -28,12 +28,12 @@
             <!-- Section 1: Employee Login -->
             <div class="space-y-5">
               <div class="flex items-center gap-4">
-                 <div class="h-[1px] flex-1 bg-gray-100"></div>
+                 <div class="h-px flex-1 bg-gray-100"></div>
                  <div class="flex flex-col items-center">
                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-none">快速登入通道</span>
                    <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Staff Landing Node</span>
                  </div>
-                 <div class="h-[1px] flex-1 bg-gray-100"></div>
+                 <div class="h-px flex-1 bg-gray-100"></div>
               </div>
               <!-- Single Row Layout for Employees -->
               <div class="grid grid-cols-5 gap-3">
@@ -52,12 +52,12 @@
             <!-- Section 2: Shareholders & Admin -->
             <div class="space-y-6">
               <div class="flex items-center gap-4">
-                 <div class="h-[1px] flex-1 bg-gray-100"></div>
+                 <div class="h-px flex-1 bg-gray-100"></div>
                  <div class="flex flex-col items-center">
                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-none">管理权限解析</span>
                    <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Management Verification</span>
                  </div>
-                 <div class="h-[1px] flex-1 bg-gray-100"></div>
+                 <div class="h-px flex-1 bg-gray-100"></div>
               </div>
               
                <div class="grid grid-cols-2 gap-4">
@@ -72,15 +72,15 @@
                       : 'bg-white/40 text-gray-400 border-white hover:border-gray-200 hover:text-gray-600'
                   ]"
                 >
-                  <div v-if="selectedAccount === name" class="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent pointer-events-none"></div>
+                  <div v-if="selectedAccount === name" class="absolute inset-0 bg-linear-to-tr from-orange-500/10 to-transparent pointer-events-none"></div>
                   {{ name }}
                 </button>
               </div>
 
               <!-- Password Field with Hint -->
               <div class="relative group mt-6">
-                <div class="absolute -inset-2 bg-gradient-to-r from-brand-orange/15 to-transparent rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000"></div>
-                <div class="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[26px] h-20 px-8 transition-all shadow-xl shadow-black/[0.02] focus-within:shadow-2xl focus-within:shadow-orange-200/20">
+                <div class="absolute -inset-2 bg-linear-to-r from-brand-orange/15 to-transparent rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000"></div>
+                <div class="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[26px] h-20 px-8 transition-all shadow-xl shadow-black/2 focus-within:shadow-2xl focus-within:shadow-orange-200/20">
                   <div class="mr-5 text-gray-300 group-focus-within:text-brand-orange transition-colors">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>
                   </div>

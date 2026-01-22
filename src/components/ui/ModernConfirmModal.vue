@@ -1,6 +1,6 @@
 <template>
   <Transition name="modal">
-    <div v-if="isOpen" class="fixed inset-0 z-[1000] flex items-center justify-center p-4 modal-backdrop" @click.self="emit('cancel')">
+    <div v-if="isOpen" class="fixed inset-0 z-1000 flex items-center justify-center p-4 modal-backdrop" @click.self="emit('cancel')">
       <Transition name="scale" appear>
         <div v-if="isOpen" class="w-full max-w-[400px] glass-card rounded-[32px] shadow-2xl overflow-hidden relative" @click.stop>
           <!-- Decorative Glow -->

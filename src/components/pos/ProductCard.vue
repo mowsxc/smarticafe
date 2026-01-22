@@ -30,7 +30,7 @@ const handleDoubleClick = (event: MouseEvent) => {
     title="双击快速添加"
   >
     <!-- Hover Shine Effect -->
-    <div class="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none"></div>
+    <div class="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-linear-to-r from-transparent via-white/40 to-transparent pointer-events-none"></div>
 
     <div class="flex flex-col h-full relative z-10">
       <div class="flex justify-between items-start mb-2">

@@ -23,7 +23,7 @@
 
     <div class="flex-1 flex gap-6 overflow-hidden">
       <!-- Left Column: Permission Matrix -->
-      <div class="flex-[3] flex flex-col gap-6 overflow-hidden">
+      <div class="flex-3 flex flex-col gap-6 overflow-hidden">
         <div class="glass-panel rounded-[32px] border border-white/60 shadow-2xl flex-1 overflow-hidden flex flex-col">
           <div ref="permissionsTableContainerRef" class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar px-2">
             <div
