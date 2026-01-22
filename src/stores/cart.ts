@@ -44,12 +44,13 @@ export const useCartStore = defineStore('cart', () => {
   const checkout = async (employee: string, shift: string) => {
     if (items.value.length === 0) return;
     if (!auth.currentUser?.id) throw new Error("Please login first");
+    if (!auth.currentUser?.token) throw new Error("Please login first");
 
     const dateYmd = new Date().toISOString().split('T')[0];
     const checkoutTime = new Date().toISOString();
 
     const input = {
-      token: "static_token_for_proto",
+      token: auth.currentUser.token,
       date_ymd: dateYmd,
       shift: shift,
       employee: employee,

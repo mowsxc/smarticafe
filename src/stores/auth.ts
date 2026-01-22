@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { getSyncService } from '../services/supabase/client';
 import { ACCOUNTS } from '../config/accounts';
 import type { ShareholderAccount } from '../config/accounts.example';
+import { tauriCmd } from '../utils/tauri';
 
 // Import enhanced sync service
 declare global {
@@ -16,7 +17,17 @@ export interface User {
   username: string;
   role: 'admin' | 'boss' | 'employee';
   displayName: string;
+  token?: string;
 }
+
+type TauriAuthSession = {
+  account_id: string;
+  role: string;
+  identity: string;
+  name: string;
+  equity: number;
+  token: string;
+};
 
 export const useAuthStore = defineStore('auth', () => {
   // Init from storage
@@ -33,11 +44,20 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 员工免密登录
   const employeeLogin = async (name: string) => {
+    let token: string | undefined;
+    try {
+      const session = await tauriCmd<TauriAuthSession>('auth_employee_login', { pick_name: name });
+      token = session?.token;
+    } catch {
+      token = undefined;
+    }
+
     const user: User = {
       id: `emp_${name}`,
       username: name,
       role: 'employee',
       displayName: name,
+      token,
     };
     currentUser.value = user;
     saveToStorage(user);
@@ -64,12 +84,26 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const shareholderLogin = async (account: ShareholderAccount) => {
+  const shareholderLogin = async (account: ShareholderAccount, password: string) => {
+    let token: string | undefined;
+    try {
+      const session = await tauriCmd<TauriAuthSession>('auth_login', {
+        input: {
+          pick_name: account.displayName,
+          password,
+        },
+      });
+      token = session?.token;
+    } catch {
+      token = undefined;
+    }
+
     const user: User = {
       id: `shareholder_${account.loginKey}`,
       username: account.loginKey,
       role: account.role,
       displayName: account.displayName,
+      token,
     };
     currentUser.value = user;
     saveToStorage(user);
@@ -144,7 +178,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (shareholder) {
       if (!pwd) throw new Error('请输入密码');
       if (pwd !== shareholder.loginKey) throw new Error('密码错误');
-      await shareholderLogin(shareholder);
+      await shareholderLogin(shareholder, pwd);
       return;
     }
 

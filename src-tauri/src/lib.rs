@@ -1617,12 +1617,8 @@ fn pass_hash(salt: &str, password: &str) -> String {
 
 fn ensure_auth_seed(conn: &Connection, now: i64) -> Result<(), String> {
     let seeds: Vec<(&str, &str, &str, &str, &str, f64)> = vec![
-        ("莫健", "laoban", "boss", "shareholder", "莫健", 20.0),
-        ("莫健", "chaoguan", "admin", "admin", "莫健", 20.0),
-        ("莫健", "cuiguoli", "boss", "shareholder", "崔国丽", 15.0),
-        ("莫健", "luqiumian", "boss", "shareholder", "路秋勉", 12.0),
-        ("莫健", "caomengsi", "boss", "shareholder", "曹梦思", 4.0),
-        ("朱晓培", "zhuxiaopei", "boss", "shareholder", "朱晓培", 49.0),
+        ("admin", "admin", "admin", "admin", "管理员", 0.0),
+        ("boss", "boss", "boss", "shareholder", "股东", 0.0),
     ];
 
     for (pick_name, password, role, identity, display_name, equity) in seeds.into_iter() {
@@ -1678,11 +1674,9 @@ fn ensure_employees_seed(conn: &Connection, now: i64) -> Result<(), String> {
     }
 
     let seeds: Vec<(&str, i64)> = vec![
-        ("黄河", 1),
-        ("刘杰", 2),
-        ("贾政华", 3),
-        ("秦佳", 4),
-        ("史红", 5),
+        ("员工A", 1),
+        ("员工B", 2),
+        ("员工C", 3),
     ];
 
     for (name, sort_order) in seeds.into_iter() {
