@@ -140,7 +140,6 @@ const editingShift = ref({
 // Check if current user can edit shift info
 const canEditShift = computed(() => {
   if (authStore.currentUser?.role === 'admin') return true;
-  if (appStore.currentEmployee === authStore.userProfile?.name) return true;
   return false;
 });
 

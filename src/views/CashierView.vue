@@ -38,12 +38,23 @@ const app = useAppStore();
 const auth = useAuthStore();
 const cart = useCartStore();
 
+const activeShiftCtx = ref<{ dateYmd: string; shift: string; employee: string } | null>(null);
+
+const getShiftCtx = () => {
+  if (activeShiftCtx.value) return activeShiftCtx.value;
+  return {
+    dateYmd: String(app.currentDate || '').trim(),
+    shift: String(app.currentShift || '').trim(),
+    employee: String(app.currentEmployee || '').trim(),
+  };
+};
+
 // 是否允许编辑：当班人员本人 或 超管
 const canEdit = computed(() => {
   const currentUser = auth.currentUser;
   if (!currentUser) return false;
   if (currentUser.role === 'admin') return true;
-  return app.currentEmployee === currentUser.username;
+  return getShiftCtx().employee === currentUser.username;
 });
 
 // Read-only mode（无编辑权限即只读：股东/非当班员工可查看但不可改）
@@ -57,7 +68,7 @@ const isCurrentShiftHolder = computed(() => {
   const currentUser = auth.currentUser;
   if (!currentUser) return false;
   // 接班人是当前登录用户
-  return app.currentEmployee === currentUser.username;
+  return getShiftCtx().employee === currentUser.username;
 });
 
 // 超管权限：可编辑所有数据
@@ -751,6 +762,27 @@ const buildShiftLiveId = (dateYmd: string, shift: string, employee: string) => {
   return `${dateYmd}::${shift}::${employee}`;
 };
 
+const loadActiveShiftFromCloud = async () => {
+  if (!supabase) return;
+
+  const { data, error } = await (supabase as any)
+    .from('shifts')
+    .select('date_ymd, shift_type, employee, start_at')
+    .eq('status', 'active')
+    .order('start_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return;
+
+  const dateYmd = String(data.date_ymd || '').trim();
+  const shift = String(data.shift_type || '').trim();
+  const employee = String(data.employee || '').trim();
+  if (!dateYmd || !shift || !employee) return;
+
+  activeShiftCtx.value = { dateYmd, shift, employee };
+};
+
 const applyShiftLiveDraft = async (draft: any) => {
   if (!draft) return;
 
@@ -842,9 +874,7 @@ const applyShiftLiveDraft = async (draft: any) => {
 const loadShiftLiveFromCloud = async () => {
   if (!supabase) return;
 
-  const dateYmd = String(app.currentDate || '').trim();
-  const shift = String(app.currentShift || '').trim();
-  const employee = String(app.currentEmployee || '').trim();
+  const { dateYmd, shift, employee } = getShiftCtx();
   if (!dateYmd || !shift || !employee) return;
 
   const id = buildShiftLiveId(dateYmd, shift, employee);
@@ -863,9 +893,8 @@ const loadShiftLiveFromCloud = async () => {
 
 const setupShiftLiveRealtime = () => {
   if (!supabase) return;
-  const dateYmd = String(app.currentDate || '').trim();
-  const shift = String(app.currentShift || '').trim();
-  const employee = String(app.currentEmployee || '').trim();
+
+  const { dateYmd, shift, employee } = getShiftCtx();
   if (!dateYmd || !shift || !employee) return;
 
   const id = buildShiftLiveId(dateYmd, shift, employee);
@@ -888,9 +917,8 @@ const setupShiftLiveRealtime = () => {
 
 const persistShiftLive = async (draft: any) => {
   if (!canEdit.value) return;
-  const dateYmd = String(app.currentDate || '').trim();
-  const shift = String(app.currentShift || '').trim();
-  const employee = String(app.currentEmployee || '').trim();
+
+  const { dateYmd, shift, employee } = getShiftCtx();
   if (!dateYmd || !shift || !employee) return;
 
   const id = buildShiftLiveId(dateYmd, shift, employee);
@@ -1030,6 +1058,7 @@ const saveDraft = async () => {
 
 const loadDraft = async () => {
     try {
+        if (isReadonly.value) return;
         let json: string | null = null;
         try {
           json = await tauriCmd<string>('kv_get', { key: `cashier_draft_v1` });
@@ -1091,6 +1120,8 @@ onMounted(async () => {
         specVal: parseFloat(String(p.spec)) || 0
     }));
     
+    await loadActiveShiftFromCloud();
+
     // 3. Load Draft (Restore previous state)
     await loadDraft();
 
@@ -1103,6 +1134,15 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+watch(
+  activeShiftCtx,
+  async () => {
+    await loadShiftLiveFromCloud();
+    setupShiftLiveRealtime();
+  },
+  { deep: true }
+);
 
 onBeforeUnmount(() => {
   try {
