@@ -1,0 +1,153 @@
+import { defineStore } from 'pinia'
+import { ref, watch } from 'vue'
+import { getSyncService } from '../services/supabase/client'
+
+export type LogoStyle = 'normal' | 'led' | 'neon' | '3d'
+
+export interface BrandSettings {
+  brandName: string
+  systemName: string
+  storeName: string
+  showStoreName: boolean
+}
+
+export interface LogoSettings {
+  style: LogoStyle
+  fontSize: {
+    brand: number
+    system: number
+    store: number
+  }
+  height: number
+  borderRadius: number
+  padding: number
+  bgGradientStart: string
+  bgGradientEnd: string
+  textColor: string
+  glowIntensity: number
+  neonColor: string
+  marginRight: number
+  verticalGap: number
+  paddingTop: number
+}
+
+export interface AnimationSettings {
+  duration: number
+  transitionType: 'ease' | 'linear' | 'cubic'
+}
+
+export const useSettingsStore = defineStore('settings', () => {
+  const brandSettings = ref<BrandSettings>({
+    brandName: '创新意 电竞馆',
+    systemName: 'SMARTICAFE',
+    storeName: '草场地',
+    showStoreName: true,
+  })
+
+  const logoSettings = ref<LogoSettings>({
+    style: 'normal',
+    fontSize: { brand: 18, system: 18, store: 11 },
+    height: 52,
+    borderRadius: 8,
+    padding: 8,
+    bgGradientStart: '#f8fafc',
+    bgGradientEnd: '#f1f5f9',
+    textColor: '#1f2937',
+    glowIntensity: 0,
+    neonColor: '#f97316',
+    marginRight: 6,
+    verticalGap: 2,
+    paddingTop: 2,
+  })
+
+  const animationSettings = ref<AnimationSettings>({
+    duration: 200,
+    transitionType: 'ease',
+  })
+
+  const initialized = ref(false)
+
+  const applyAnimationDuration = () => {
+    document.documentElement.style.setProperty('--animation-duration', `${animationSettings.value.duration}ms`)
+  }
+
+  const enqueueSetting = (scope: string, payload: Record<string, unknown>) => {
+    try {
+      const syncService = getSyncService()
+      syncService.enqueue({
+        table: 'app_settings',
+        operation: 'upsert',
+        data: {
+          scope,
+          payload,
+          updated_at: new Date().toISOString(),
+        },
+      })
+    } catch (error) {
+      console.warn('Failed to enqueue settings sync:', error)
+    }
+  }
+
+  const init = () => {
+    if (initialized.value) return
+    initialized.value = true
+
+    const savedAnim = localStorage.getItem('animationSettings')
+    if (savedAnim) {
+      try {
+        animationSettings.value = { ...animationSettings.value, ...JSON.parse(savedAnim) }
+      } catch (error) {
+        console.warn('Failed to load animation settings')
+      }
+    }
+
+    const savedBrand = localStorage.getItem('brandSettings')
+    if (savedBrand) {
+      try {
+        brandSettings.value = { ...brandSettings.value, ...JSON.parse(savedBrand) }
+      } catch (error) {
+        console.warn('Failed to load brand settings')
+      }
+    }
+
+    const savedLogo = localStorage.getItem('logoSettings')
+    if (savedLogo) {
+      try {
+        logoSettings.value = { ...logoSettings.value, ...JSON.parse(savedLogo) }
+      } catch (error) {
+        console.warn('Failed to load logo settings')
+      }
+    }
+
+    applyAnimationDuration()
+  }
+
+  watch(animationSettings, () => {
+    localStorage.setItem('animationSettings', JSON.stringify(animationSettings.value))
+    applyAnimationDuration()
+    enqueueSetting('animation', animationSettings.value)
+  }, { deep: true })
+
+  watch(brandSettings, () => {
+    localStorage.setItem('brandSettings', JSON.stringify(brandSettings.value))
+    enqueueSetting('brand', brandSettings.value)
+  }, { deep: true })
+
+  watch(logoSettings, () => {
+    localStorage.setItem('logoSettings', JSON.stringify(logoSettings.value))
+    enqueueSetting('logo', logoSettings.value)
+  }, { deep: true })
+
+  const syncToCloud = async () => {
+    const syncService = getSyncService()
+    return await syncService.forceSync()
+  }
+
+  return {
+    brandSettings,
+    logoSettings,
+    animationSettings,
+    init,
+    syncToCloud,
+  }
+})
