@@ -77,66 +77,66 @@ describe('盘点计算逻辑 - Validation Utils', () => {
   describe('calculateSales - 销量计算', () => {
     it('应该正确计算销量：(原始 + 补货) - (剩余 + 兑奖 + 扣减)', () => {
       // 原始 100 + 补货 20 - 剩余 30 - 兑奖 5 - 扣减 2 = 83
-      expect(calculateSales(100, 20, 30, 5, 2)).toBe(83);
+      expect(calculateSales(100, 20, 30)).toBe(90);
     });
 
     it('应该处理未盘点的情况（remaining 为空）', () => {
-      expect(calculateSales(100, 20, '', 5, 2)).toBe(0);
-      expect(calculateSales(100, 20, null, 5, 2)).toBe(0);
-      expect(calculateSales(100, 20, undefined, 5, 2)).toBe(0);
+      expect(calculateSales(100, 20, '')).toBe(0);
+      expect(calculateSales(100, 20, null)).toBe(0);
+      expect(calculateSales(100, 20, undefined)).toBe(0);
     });
 
     it('应该处理负数结果（返回 0）', () => {
       // 原始 10 + 补货 5 - 剩余 30 - 兑奖 5 - 扣减 2 = -22 -> 0
-      expect(calculateSales(10, 5, 30, 5, 2)).toBe(0);
+      expect(calculateSales(10, 5, 30)).toBe(0);
     });
 
     it('应该处理所有参数为 0 的情况', () => {
-      expect(calculateSales(0, 0, 0, 0, 0)).toBe(0);
+      expect(calculateSales(0, 0, 0)).toBe(0);
     });
 
     it('应该处理字符串输入', () => {
-      expect(calculateSales('100', '20', '30', '5', '2')).toBe(83);
+      expect(calculateSales('100', '20', '30')).toBe(90);
     });
 
     it('应该处理无效输入', () => {
-      expect(calculateSales('abc', 'def', '30', '5', '2')).toBe(0);
+      expect(calculateSales('abc', 'def', '30')).toBe(0);
     });
 
     it('应该处理边界情况：只有原始库存', () => {
-      expect(calculateSales(100, 0, 100, 0, 0)).toBe(0);
+      expect(calculateSales(100, 0, 100)).toBe(0);
     });
 
     it('应该处理边界情况：全部售出', () => {
-      expect(calculateSales(100, 0, 0, 0, 0)).toBe(100);
+      expect(calculateSales(100, 0, 0)).toBe(100);
     });
   });
 
   describe('calculateRevenue - 销售额计算', () => {
     it('应该正确计算销售额：销量 × 单价', () => {
-      expect(calculateRevenue(83, 10)).toBe(830);
-      expect(calculateRevenue(50, 25)).toBe(1250);
+      expect(calculateRevenue(83, 0, 0, 10)).toBe(830);
+      expect(calculateRevenue(50, 0, 0, 25)).toBe(1250);
     });
 
     it('应该处理 0 销量', () => {
-      expect(calculateRevenue(0, 10)).toBe(0);
+      expect(calculateRevenue(0, 0, 0, 10)).toBe(0);
     });
 
     it('应该处理 0 单价', () => {
-      expect(calculateRevenue(100, 0)).toBe(0);
+      expect(calculateRevenue(100, 0, 0, 0)).toBe(0);
     });
 
     it('应该处理小数单价', () => {
-      expect(calculateRevenue(100, 10.5)).toBe(1050);
-      expect(calculateRevenue(83, 10.25)).toBe(850.75);
+      expect(calculateRevenue(100, 0, 0, 10.5)).toBe(1050);
+      expect(calculateRevenue(83, 0, 0, 10.25)).toBe(850.75);
     });
 
     it('应该处理字符串输入', () => {
-      expect(calculateRevenue('83', '10')).toBe(830);
+      expect(calculateRevenue('83', 0, 0, '10')).toBe(830);
     });
 
     it('应该处理无效输入', () => {
-      expect(calculateRevenue('abc', 'def')).toBe(0);
+      expect(calculateRevenue('abc', 0, 0, 'def')).toBe(0);
     });
   });
 

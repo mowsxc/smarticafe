@@ -198,11 +198,9 @@ describe('应缴金额计算逻辑 - Amount Due Module', () => {
         const sales = calculateSales(
           row.original,
           row.restock,
-          row.remaining,
-          row.redeem,
-          row.loss
+          row.remaining
         );
-        const revenue = calculateRevenue(sales, row.unitPrice);
+        const revenue = calculateRevenue(sales, row.redeem, row.loss, row.unitPrice, 0);
         totalRevenue += revenue;
       });
 
@@ -225,11 +223,9 @@ describe('应缴金额计算逻辑 - Amount Due Module', () => {
         const sales = calculateSales(
           row.original,
           row.restock,
-          row.remaining,
-          row.redeem,
-          row.loss
+          row.remaining
         );
-        const revenue = calculateRevenue(sales, row.unitPrice);
+        const revenue = calculateRevenue(sales, row.redeem, row.loss, row.unitPrice, 0);
         totalRevenue += revenue;
       });
 
@@ -253,11 +249,9 @@ describe('应缴金额计算逻辑 - Amount Due Module', () => {
         const sales = calculateSales(
           row.original,
           row.restock,
-          row.remaining,
-          row.redeem,
-          row.loss
+          row.remaining
         );
-        const revenue = calculateRevenue(sales, row.unitPrice);
+        const revenue = calculateRevenue(sales, row.redeem, row.loss, row.unitPrice, 0);
         totalRevenue += revenue;
       });
 

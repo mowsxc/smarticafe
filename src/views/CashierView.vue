@@ -12,7 +12,7 @@ import SnapshotModal from '../components/SnapshotModal.vue';
 import QuickLoginPanel from '../components/QuickLoginPanel.vue';
 import { createShiftRecord } from '../api/shift';
 import { getDefaultRedeemDiscount } from '../api/types';
-import { getSyncService } from '../services/supabase/client';
+import { getSyncService, supabase, subscribeToTable } from '../services/supabase/client';
 import {
   formatAuto,
   formatNumberKeepZero,
@@ -171,6 +171,9 @@ interface ImportHistory {
     meituanCount: number;
 }
 const importHistory = ref<ImportHistory | null>(null);
+
+const lastLocalEditAt = ref(0);
+let shiftLiveSubscription: { unsubscribe: () => void } | null = null;
 
 const handoverTableContainerRef = ref<HTMLDivElement | null>(null);
 const handoverTableWrapRef = ref<HTMLDivElement | null>(null);
@@ -748,6 +751,141 @@ const buildShiftLiveId = (dateYmd: string, shift: string, employee: string) => {
   return `${dateYmd}::${shift}::${employee}`;
 };
 
+const applyShiftLiveDraft = async (draft: any) => {
+  if (!draft) return;
+
+  if (draft.shiftState) {
+    shiftState.value.wangfei = draft.shiftState.wangfei ?? '';
+    shiftState.value.shouhuo = draft.shiftState.shouhuo ?? 0;
+    shiftState.value.meituan = draft.shiftState.meituan ?? '';
+    shiftState.value.zhichu = draft.shiftState.zhichu ?? 0;
+    shiftState.value.yingjiao = draft.shiftState.yingjiao ?? 0;
+  }
+
+  if (draft.expenses) {
+    const restoredExpenses = Array.isArray(draft.expenses) ? draft.expenses : [];
+    expenses.value = restoredExpenses.map((it: any) => ({
+      item: it?.item ?? '',
+      amount: it?.amount ?? '',
+      barPay: it?.barPay ?? '',
+      financePay: calculateFinancePay(it?.amount ?? '', it?.barPay ?? ''),
+    }));
+    const last = expenses.value[expenses.value.length - 1];
+    if (!last || String(last.item ?? '') !== '' || String(last.amount ?? '') !== '' || String(last.barPay ?? '') !== '') {
+      expenses.value.push({ item: '', amount: '', barPay: '', financePay: '' });
+    }
+  }
+
+  if (draft.incomes) {
+    const restoredIncomes = Array.isArray(draft.incomes) ? draft.incomes : [];
+    incomes.value = restoredIncomes.map((it: any) => ({
+      item: it?.item ?? '',
+      amount: it?.amount ?? '',
+    }));
+    const last = incomes.value[incomes.value.length - 1];
+    if (!last || String(last.item ?? '') !== '' || String(last.amount ?? '') !== '') {
+      incomes.value.push({ item: '', amount: '' });
+    }
+  }
+
+  if (draft.meituanRows) meituanRows.value = draft.meituanRows;
+
+  if (
+    (!handoverRows.value || handoverRows.value.length === 0) &&
+    draft.handoverRowsSnapshot &&
+    Array.isArray(draft.handoverRowsSnapshot) &&
+    draft.handoverRowsSnapshot.length > 0
+  ) {
+    handoverRows.value = draft.handoverRowsSnapshot.map((it: any) => {
+      const row: HandoverRow = {
+        id: it?.id ?? it?.name ?? '',
+        name: it?.name ?? it?.id ?? '',
+        category: it?.category ?? '未分类',
+        unit_price: Number(it?.unit_price) || 0,
+        stock: Number(it?.stock) || 0,
+        spec: Number(it?.spec) || 1,
+        original: Number(it?.original) || 0,
+        restock: it?.restock ?? '',
+        remaining: it?.remaining ?? '',
+        redeem: it?.redeem ?? '',
+        redeem_discount: Number(it?.redeem_discount) || getDefaultRedeemDiscount(String(it?.name ?? it?.id ?? '')),
+        loss: it?.loss ?? '',
+        auto_loss: Number(it?.auto_loss) || 0,
+        purchase: Number(it?.purchase) || 0,
+        stockVal: Number(it?.stockVal) || 0,
+        sales: 0,
+        revenue: 0,
+        unitPriceVal: Number(it?.unitPriceVal) || Number(it?.unit_price) || 0,
+        specVal: Number(it?.specVal) || Number(it?.spec) || 1,
+      };
+      return row;
+    });
+  }
+
+  if (draft.handoverInputs && Array.isArray(draft.handoverInputs)) {
+    const inputMap = new Map(draft.handoverInputs.map((i: any) => [i.id, i]));
+    handoverRows.value.forEach(p => {
+      const saved = inputMap.get(p.id) as any;
+      if (saved) {
+        p.restock = (saved.restock === 0 ? '' : (saved.restock ?? ''));
+        p.remaining = saved.remaining ?? '';
+        p.redeem = (saved.redeem === 0 ? '' : (saved.redeem ?? ''));
+        p.loss = (saved.loss === 0 ? '' : (saved.loss ?? ''));
+      }
+    });
+  }
+
+  updateHandoverCalc();
+  updateYingjiao();
+};
+
+const loadShiftLiveFromCloud = async () => {
+  if (!supabase) return;
+
+  const dateYmd = String(app.currentDate || '').trim();
+  const shift = String(app.currentShift || '').trim();
+  const employee = String(app.currentEmployee || '').trim();
+  if (!dateYmd || !shift || !employee) return;
+
+  const id = buildShiftLiveId(dateYmd, shift, employee);
+  const { data, error } = await (supabase as any)
+    .from('shift_live')
+    .select('payload, updated_at')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !data?.payload) return;
+
+  if (!canEdit.value) {
+    await applyShiftLiveDraft(data.payload);
+  }
+};
+
+const setupShiftLiveRealtime = () => {
+  if (!supabase) return;
+  const dateYmd = String(app.currentDate || '').trim();
+  const shift = String(app.currentShift || '').trim();
+  const employee = String(app.currentEmployee || '').trim();
+  if (!dateYmd || !shift || !employee) return;
+
+  const id = buildShiftLiveId(dateYmd, shift, employee);
+
+  try {
+    shiftLiveSubscription?.unsubscribe();
+  } catch {
+    // ignore
+  }
+  shiftLiveSubscription = subscribeToTable('shift_live', `id=eq.${id}`, async (payload: any) => {
+    const now = Date.now();
+    if (canEdit.value && now - lastLocalEditAt.value < 2000) return;
+    const nextDraft = payload?.new?.payload;
+    if (!nextDraft) return;
+    if (!canEdit.value) {
+      await applyShiftLiveDraft(nextDraft);
+    }
+  });
+};
+
 const persistShiftLive = async (draft: any) => {
   if (!canEdit.value) return;
   const dateYmd = String(app.currentDate || '').trim();
@@ -819,6 +957,7 @@ const performSave = async () => {
     if (loading.value) return;
 
     try {
+         lastLocalEditAt.value = Date.now();
          const draft = {
              shiftState: { ...shiftState.value },
              expenses: expenses.value,
@@ -910,93 +1049,7 @@ const loadDraft = async () => {
         if (!json) return;
 
         const draft = JSON.parse(json);
-        
-        // Restore Shift State
-        if (draft.shiftState) {
-             shiftState.value.wangfei = draft.shiftState.wangfei ?? '';
-             shiftState.value.shouhuo = draft.shiftState.shouhuo ?? 0;
-             shiftState.value.meituan = draft.shiftState.meituan ?? '';
-             shiftState.value.zhichu = draft.shiftState.zhichu ?? 0;
-             shiftState.value.yingjiao = draft.shiftState.yingjiao ?? 0;
-        }
-        
-        // Restore Tables
-        if (draft.expenses) {
-          const restoredExpenses = Array.isArray(draft.expenses) ? draft.expenses : [];
-          expenses.value = restoredExpenses.map((it: any) => ({
-            item: it?.item ?? '',
-            amount: it?.amount ?? '',
-            barPay: it?.barPay ?? '',
-            financePay: calculateFinancePay(it?.amount ?? '', it?.barPay ?? ''),
-          }));
-          const last = expenses.value[expenses.value.length - 1];
-          if (!last || String(last.item ?? '') !== '' || String(last.amount ?? '') !== '' || String(last.barPay ?? '') !== '') {
-            expenses.value.push({ item: '', amount: '', barPay: '', financePay: '' });
-          }
-        }
-        if (draft.incomes) {
-          const restoredIncomes = Array.isArray(draft.incomes) ? draft.incomes : [];
-          incomes.value = restoredIncomes.map((it: any) => ({
-            item: it?.item ?? '',
-            amount: it?.amount ?? '',
-          }));
-          const last = incomes.value[incomes.value.length - 1];
-          if (!last || String(last.item ?? '') !== '' || String(last.amount ?? '') !== '') {
-            incomes.value.push({ item: '', amount: '' });
-          }
-        }
-        if (draft.meituanRows) meituanRows.value = draft.meituanRows;
-
-        // 如果产品列表未能加载（handoverRows 为空），使用快照恢复整个盘点表
-        if (
-          (!handoverRows.value || handoverRows.value.length === 0) &&
-          draft.handoverRowsSnapshot &&
-          Array.isArray(draft.handoverRowsSnapshot) &&
-          draft.handoverRowsSnapshot.length > 0
-        ) {
-          handoverRows.value = draft.handoverRowsSnapshot.map((it: any) => {
-            const row: HandoverRow = {
-              id: it?.id ?? it?.name ?? '',
-              name: it?.name ?? it?.id ?? '',
-              category: it?.category ?? '未分类',
-              unit_price: Number(it?.unit_price) || 0,
-              stock: Number(it?.stock) || 0,
-              spec: Number(it?.spec) || 1,
-              original: Number(it?.original) || 0,
-              restock: it?.restock ?? '',
-              remaining: it?.remaining ?? '',
-              redeem: it?.redeem ?? '',
-              redeem_discount: Number(it?.redeem_discount) || getDefaultRedeemDiscount(String(it?.name ?? it?.id ?? '')),
-              loss: it?.loss ?? '',
-              auto_loss: Number(it?.auto_loss) || 0,
-              purchase: Number(it?.purchase) || 0,
-              stockVal: Number(it?.stockVal) || 0,
-              sales: 0,
-              revenue: 0,
-              unitPriceVal: Number(it?.unitPriceVal) || Number(it?.unit_price) || 0,
-              specVal: Number(it?.specVal) || Number(it?.spec) || 1,
-            };
-            return row;
-          });
-        }
-        
-        // Restore Handover Inputs (Overlay onto fresh products)
-        if (draft.handoverInputs && Array.isArray(draft.handoverInputs)) {
-            const inputMap = new Map(draft.handoverInputs.map((i: any) => [i.id, i]));
-            handoverRows.value.forEach(p => {
-                const saved = inputMap.get(p.id) as any;
-                if (saved) {
-                    p.restock = (saved.restock === 0 ? '' : (saved.restock ?? ''));
-                    p.remaining = saved.remaining ?? '';
-                    p.redeem = (saved.redeem === 0 ? '' : (saved.redeem ?? ''));
-                    p.loss = (saved.loss === 0 ? '' : (saved.loss ?? ''));
-                }
-            });
-        }
-        
-        // Re-calculate all to update totals
-        updateHandoverCalc();
-        updateYingjiao();
+        await applyShiftLiveDraft(draft);
     } catch (e) {
         // 使用错误处理函数
         handleDraftLoadError(e, { 
@@ -1041,11 +1094,23 @@ onMounted(async () => {
     // 3. Load Draft (Restore previous state)
     await loadDraft();
 
+    await loadShiftLiveFromCloud();
+    setupShiftLiveRealtime();
+
   } catch (e) {
     console.error("Failed to load products:", e);
   } finally {
     loading.value = false;
   }
+});
+
+onBeforeUnmount(() => {
+  try {
+    shiftLiveSubscription?.unsubscribe();
+  } catch {
+    // ignore
+  }
+  shiftLiveSubscription = null;
 });
 
 const updateHandoverCalc = () => {

@@ -232,12 +232,19 @@ function parseRow(
       parts.length >= firstNonEmptyIndex + 12) {
     
     // 检查最后一个非空列是否包含单价（数字+元）
-    const lastNonEmptyIndex = parts.findLastIndex(p => p?.trim());
-    const lastNonEmpty = parts[lastNonEmptyIndex]?.trim() || '';
-    
+    let lastNonEmptyIndex = -1;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const v = (parts[i] || '').trim();
+      if (v) {
+        lastNonEmptyIndex = i;
+        break;
+      }
+    }
+
+    if (lastNonEmptyIndex < 1) return;
+
     // 如果最后是规格（数字），往前找单价
-    const specCandidate = parts[lastNonEmptyIndex]?.trim() || '';
-    const priceCandidate = parts[lastNonEmptyIndex - 1]?.trim() || '';
+    const priceCandidate = (parts[lastNonEmptyIndex - 1] || '').trim();
     
     // 单价应该在规格前面，格式如 "3.0元" 或 "3元"
     if (priceCandidate && (priceCandidate.includes('元') || parsePrice(priceCandidate) > 0)) {
