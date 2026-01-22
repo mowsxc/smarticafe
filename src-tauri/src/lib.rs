@@ -1616,153 +1616,14 @@ fn pass_hash(salt: &str, password: &str) -> String {
 }
 
 fn ensure_auth_seed(conn: &Connection, now: i64) -> Result<(), String> {
-    let seeds: Vec<(&str, &str, &str, &str, &str, f64)> = vec![
-        ("admin", "admin", "admin", "admin", "管理员", 0.0),
-        ("boss", "boss", "boss", "shareholder", "股东", 0.0),
-        ("example", "example", "example", "example", "示例用户", 0.0),
-    ];
-
-    for (pick_name, password, role, identity, display_name, equity) in seeds.into_iter() {
-        let exists: i64 = conn
-            .query_row(
-                "SELECT COUNT(1) FROM auth_accounts WHERE pick_name = ?1 AND identity = ?2 AND display_name = ?3",
-                params![pick_name, identity, display_name],
-                |r| r.get(0),
-            )
-            .map_err(|e| format!("seed auth_accounts exists: {e}"))?;
-
-        if exists > 0 {
-            continue;
-        }
-
-        let id = Uuid::new_v4().to_string();
-        let salt = Uuid::new_v4().to_string();
-        let hash = pass_hash(&salt, password);
-        conn.execute(
-            "INSERT INTO auth_accounts(
-                id, pick_name, pass_salt, pass_hash,
-                role, identity, display_name, equity,
-                is_active, created_at, updated_at
-             ) VALUES(
-                ?1, ?2, ?3, ?4,
-                ?5, ?6, ?7, ?8,
-                1, ?9, ?10
-             )",
-            params![
-                id,
-                pick_name,
-                salt,
-                hash,
-                role,
-                identity,
-                display_name,
-                equity,
-                now,
-                now
-            ],
-        )
-        .map_err(|e| format!("seed auth_accounts insert: {e}"))?;
-    }
     Ok(())
 }
 
 fn ensure_employees_seed(conn: &Connection, now: i64) -> Result<(), String> {
-    let count: i64 = conn
-        .query_row("SELECT COUNT(1) FROM employees", [], |r| r.get(0))
-        .map_err(|e| format!("employees count: {e}"))?;
-    if count > 0 {
-        return Ok(());
-    }
-
-    let seeds: Vec<(&str, i64)> = vec![
-        ("员工A", 1),
-        ("员工B", 2),
-        ("员工C", 3),
-        ("示例员工", 4),
-    ];
-
-    for (name, sort_order) in seeds.into_iter() {
-        let id = Uuid::new_v4().to_string();
-        conn.execute(
-            "INSERT INTO employees(id, name, sort_order, is_active, created_at, updated_at) VALUES(?1, ?2, ?3, 1, ?4, ?5)",
-            params![id, name, sort_order, now, now],
-        )
-        .map_err(|e| format!("seed employees: {e}"))?;
-    }
     Ok(())
 }
 
 fn ensure_products_seed(conn: &Connection, now: i64) -> Result<(), String> {
-    let count: i64 = conn
-        .query_row("SELECT COUNT(1) FROM products", [], |r| r.get(0))
-        .map_err(|e| format!("products count: {e}"))?;
-    if count > 0 {
-        return Ok(());
-    }
-
-    // (name, original, stock, price, spec, category)
-    // Note: User provided "Original", "Stock", "Price", "Spec".
-    // We map "Stock" to `stock` column. "Price" to `unit_price`. "Spec" to `spec`.
-    // "Original" is not a standard column in products table usually (it's snapshot data), 
-    // but maybe we can put it in `stock_prev` or just ignore if it's not needed for current operations.
-    // However, the products table schema has `cost_price`, `spec`, `on_shelf`, `stock`.
-    // We will assume `on_shelf` = `stock` for initialization or just 0.
-    // Category is inferred or default.
-    let seeds: Vec<(&str, f64, f64, f64, f64, &str)> = vec![
-        ("百岁山", 27.0, 7.0, 3.0, 24.0, "饮品"),
-        ("可口可乐", 28.0, 1.0, 3.0, 24.0, "饮品"),
-        ("中瓶/冰茶", 40.0, 50.0, 5.0, 12.0, "饮品"),
-        ("阿萨姆", 15.0, 5.0, 5.0, 15.0, "饮品"),
-        ("营养快线", 20.0, 9.0, 5.0, 15.0, "饮品"),
-        ("脉动", 9.0, 9.0, 5.0, 15.0, "饮品"),
-        ("红牛", 16.0, 6.0, 6.0, 24.0, "饮品"),
-        ("毛峰", 11.0, 4.0, 6.0, 12.0, "饮品"),
-        ("乐虎", 17.0, 9.0, 6.0, 24.0, "饮品"),
-        ("大补水", 10.0, 9.0, 6.0, 12.0, "饮品"),
-        ("东鹏", 13.0, 6.0, 6.0, 24.0, "饮品"),
-        ("咖啡", 4.0, 2.0, 8.0, 15.0, "饮品"),
-        ("东方树叶", 20.0, 9.0, 8.0, 12.0, "饮品"),
-        ("桶装泡面", 14.0, 143.0, 6.0, 1.0, "食品"),
-        ("袋装泡面", 2.0, 155.0, 5.0, 1.0, "食品"),
-        ("纸巾", 27.0, 312.0, 1.0, 1.0, "日用"),
-        ("约辣", 15.0, 90.0, 1.0, 1.0, "食品"),
-        ("豆干", 12.0, 80.0, 1.5, 1.0, "食品"),
-        ("干吃面", 33.0, 5.0, 1.5, 30.0, "食品"),
-        ("小火腿", 8.0, 3.0, 1.0, 50.0, "食品"),
-        ("卤蛋", 11.0, 27.0, 2.0, 1.0, "食品"),
-        ("自热火锅", 5.0, 4.0, 15.0, 1.0, "食品"),
-        ("大火腿", 43.0, 3.0, 3.0, 50.0, "食品"),
-        ("鸡蛋", 1.0, 0.0, 3.5, 1.0, "食品"),
-        ("大辣条", 11.0, 85.0, 4.0, 1.0, "食品"),
-        ("口味王10", 0.0, 0.0, 10.0, 1.0, "槟榔"),
-        ("口味王15", 0.0, 0.0, 15.0, 1.0, "槟榔"),
-        ("口味王30", 13.0, 10.0, 30.0, 1.0, "槟榔"),
-        ("口味王50", 8.0, 2.0, 50.0, 1.0, "槟榔"),
-        ("口味王100", 2.0, 0.0, 100.0, 1.0, "槟榔"),
-        ("锅巴", 13.0, 45.0, 3.0, 1.0, "食品"),
-        ("酸辣粉", 4.0, 26.0, 7.0, 1.0, "食品"),
-        ("四联玉米肠", 7.0, 46.0, 5.0, 1.0, "食品"),
-        ("奶茶", 11.0, 12.0, 5.0, 1.0, "饮品"),
-    ];
-
-    for (name, _, stock, price, spec, category) in seeds.into_iter() {
-        let id = Uuid::new_v4().to_string();
-        conn.execute(
-            "INSERT INTO products(
-                id, name, category, unit_price, cost_price, spec,
-                on_shelf, stock, is_active, created_at, updated_at
-             ) VALUES(
-                ?1, ?2, ?3, ?4, ?5, ?6,
-                ?7, ?8, 1, ?9, ?10
-             )",
-            params![
-                id, name, category, price, 0.0, spec,
-                stock, stock, // on_shelf init same as stock
-                now, now
-            ],
-        )
-        .map_err(|e| format!("seed products: {e}"))?;
-    }
     Ok(())
 }
 
@@ -2778,33 +2639,7 @@ fn operation_logs_list(app: tauri::AppHandle, token: String, limit: Option<i64>)
     let _actor_id = require_admin(&conn, token.trim())?;
     let _l = limit.unwrap_or(50); 
 
-    // 返回模拟数据
-    Ok(vec![
-        OperationLogRow {
-            id: 1,
-            user: "admin".to_string(),
-            action: "登录系统".to_string(),
-            module: "认证".to_string(),
-            time: "2026-01-14 09:30:15".to_string(),
-            ip: "127.0.0.1".to_string(),
-        },
-        OperationLogRow {
-            id: 2,
-            user: "admin".to_string(),
-            action: "修改密码".to_string(),
-            module: "用户管理".to_string(),
-            time: "2026-01-14 09:25:00".to_string(),
-            ip: "127.0.0.1".to_string(),
-        },
-        OperationLogRow {
-            id: 3,
-            user: "boss".to_string(),
-            action: "登录系统".to_string(),
-            module: "认证".to_string(),
-            time: "2026-01-14 08:45:22".to_string(),
-            ip: "127.0.0.1".to_string(),
-        },
-    ])
+    Ok(Vec::new())
 }
 
 // ============ 财务管理相关命令 ============
