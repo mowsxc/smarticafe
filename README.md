@@ -13,4 +13,4 @@
 
 ## 开发协作
 
-- AI/协作者请先阅读：`AGENTS.md` 与 `docs/INDEX.md`。
+- 协作开发请先阅读：`docs/INDEX.md`。

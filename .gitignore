@@ -128,11 +128,18 @@ verify-*.ps1
 .kiro/**
 .agent/**
 .windsurf/**
-!.sisyphus/README.md
-!.kiro/README.md
-!.agent/README.md
-!.windsurf/README.md
 *.md.bak
+
+# ------------------------------------
+# 13.1 本地专属文档（不公开）
+# ------------------------------------
+CHANGELOG.md
+WORK_LOG.md
+todolist.md
+docs/SETUP.md
+docs/SUPABASE_RLS.md
+docs/AI_RULES.md
+AGENTS.md
 
 # ------------------------------------
 # 14. Supabase 本地配置
