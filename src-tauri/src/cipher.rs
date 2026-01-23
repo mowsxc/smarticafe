@@ -1,5 +1,4 @@
 use magic_crypt::{new_magic_crypt, MagicCryptTrait};
-use std::sync::OnceLock;
 
 // In a real app, this should be an env var or compiled secret
 const SECRET_KEY: &str = "Smarticafe_Secure_Profile_Key_2026"; 
