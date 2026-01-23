@@ -16,7 +16,7 @@ use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 
 pub const API_HOST: [u8; 4] = [0, 0, 0, 0];
-pub const API_PORT: u16 = 32520;
+pub const API_PORT: u16 = 32521;
 
 // 共享的AppHandle
 pub struct AppState {
@@ -362,42 +362,104 @@ async fn api_rpc_handler(
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
-        "auth_get_setup_step" => {
-            match crate::commands::auth::auth_get_setup_step(state.app.clone()) {
+        "shift_get_active" => {
+            // For now, return null as there's no active shift implementation
+            // This is used by the init check - if null, system is not initialized
+            Ok(ApiResponse::ok(serde_json::Value::Null))
+        },
+        "employees_list" => {
+            // For init check, we don't require token
+            let conn = match crate::db::open_db(&state.app) {
+                Ok(c) => c,
+                Err(e) => return Err(ApiResponse::err(format!("db_error: {}", e))),
+            };
+
+            let mut stmt = match conn.prepare("SELECT id, name, sort_order, is_active FROM employees ORDER BY sort_order, name") {
+                Ok(s) => s,
+                Err(e) => return Err(ApiResponse::err(format!("prepare_error: {}", e))),
+            };
+
+            let employees: Result<Vec<crate::models::EmployeeRow>, _> = stmt.query_map([], |row| {
+                Ok(crate::models::EmployeeRow {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    sort_order: row.get(2)?,
+                    is_active: row.get::<_, i64>(3)? != 0,
+                })
+            }).and_then(|iter| iter.collect());
+
+            match employees {
                 Ok(v) => Ok(ApiResponse::ok(serde_json::to_value(v).unwrap())),
-                Err(e) => Err(ApiResponse::err(e)),
+                Err(e) => Err(ApiResponse::err(format!("query_error: {}", e))),
             }
         },
-        "auth_save_setup_step" => {
-            let step = _args["step"].as_i64().unwrap_or(1) as i32;
-            match crate::commands::auth::auth_save_setup_step(state.app.clone(), step) {
+        "employee_set_active" => {
+            let input: crate::models::EmployeeSetActiveInput = match serde_json::from_value(_args) {
+                Ok(v) => v,
+                Err(e) => return Err(ApiResponse::<Value>::err(format!("invalid_args: {}", e))),
+            };
+
+            match crate::commands::auth::employee_set_active(state.app.clone(), input) {
                 Ok(_) => Ok(ApiResponse::ok(Value::Null)),
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
-        "auth_save_setup_data" => {
+        "settings_save_business" => {
+            let input: crate::models::BusinessSettingsInput = match serde_json::from_value(_args) {
+                Ok(v) => v,
+                Err(e) => return Err(ApiResponse::<Value>::err(format!("invalid_args: {}", e))),
+            };
+
+            match crate::commands::auth::settings_save_business(state.app.clone(), input) {
+                Ok(_) => Ok(ApiResponse::ok(Value::Null)),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        "kv_remove" => {
             let key = _args["key"].as_str().unwrap_or("").to_string();
-            let data = _args["data"].as_str().unwrap_or("").to_string();
-            match crate::commands::auth::auth_save_setup_data(state.app.clone(), key, data) {
+            if key.is_empty() {
+                return Err(ApiResponse::err("missing_key".to_string()));
+            }
+            match crate::commands::kv::kv_remove(state.app.clone(), key) {
                 Ok(_) => Ok(ApiResponse::ok(Value::Null)),
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
-        "auth_get_setup_data" => {
-            let key = _args["key"].as_str().unwrap_or("").to_string();
-            match crate::commands::auth::auth_get_setup_data(state.app.clone(), key) {
-                Ok(v) => Ok(ApiResponse::ok(serde_json::to_value(v).unwrap())),
+        "auth_accounts_list" => {
+            match crate::commands::auth::auth_accounts_list(state.app.clone(), "system".to_string()) {
+                Ok(accounts) => Ok(ApiResponse::ok(serde_json::to_value(accounts).unwrap())),
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
-        "auth_complete_setup" => {
-            match crate::commands::auth::auth_complete_setup(state.app.clone()) {
+        "auth_update_brand_settings" => {
+            let input: crate::models::BrandSettings = match serde_json::from_value(_args) {
+                Ok(v) => v,
+                Err(e) => return Err(ApiResponse::<Value>::err(format!("invalid_args: {}", e))),
+            };
+
+            match crate::commands::auth::auth_update_brand_settings(state.app.clone(), "system".to_string(), input) {
                 Ok(_) => Ok(ApiResponse::ok(Value::Null)),
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
-        "auth_dbg_fully_reset_accounts" => {
-            match crate::commands::auth::auth_dbg_fully_reset_accounts(state.app.clone()) {
+        "settings_save_cloud" => {
+            let input: crate::commands::auth::CloudSettingsInput = match serde_json::from_value(_args) {
+                Ok(v) => v,
+                Err(e) => return Err(ApiResponse::<Value>::err(format!("invalid_args: {}", e))),
+            };
+
+            match crate::commands::auth::settings_save_cloud(state.app.clone(), input) {
+                Ok(_) => Ok(ApiResponse::ok(Value::Null)),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        "auth_account_set_active" => {
+            let input: crate::models::AuthAccountSetActiveInput = match serde_json::from_value(_args) {
+                Ok(v) => v,
+                Err(e) => return Err(ApiResponse::<Value>::err(format!("invalid_args: {}", e))),
+            };
+
+            match crate::commands::auth::auth_account_set_active(state.app.clone(), input) {
                 Ok(_) => Ok(ApiResponse::ok(Value::Null)),
                 Err(e) => Err(ApiResponse::err(e)),
             }

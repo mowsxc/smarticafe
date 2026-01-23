@@ -6,9 +6,10 @@
       @click.self="emit('close')"
     >
       <Transition name="scale" appear>
-        <div 
+        <div
           v-if="isOpen"
           class="w-full max-w-[420px] glass-card rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col relative"
+          :class="{ 'max-h-[90vh]': isMobile, 'overflow-y-auto': isMobile }"
           @click.stop
         >
           <!-- Header: Branding -->
@@ -119,6 +120,16 @@
             <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
             <span class="text-[10px] font-black text-emerald-600/80 uppercase tracking-widest">SESSION SECURE: {{ authStore.userProfile?.name }}</span>
           </div>
+
+          <!-- System Info Footer -->
+          <div class="px-8 py-2 bg-gray-50/20 border-t border-gray-100/20 flex items-center justify-center gap-2">
+            <span class="text-[9px] font-black text-orange-500 uppercase tracking-widest">
+              {{ settingsStore.brandSettings.systemName }} v2.0.0
+            </span>
+            <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest">
+              SmartCafe System
+            </span>
+          </div>
         </div>
       </Transition>
     </div>
@@ -154,6 +165,13 @@ const bosses = ref<string[]>([]);
 
 const props = defineProps<Props>();
 
+// 移动端检测
+const isMobile = ref(false);
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768 || window.innerHeight <= 600;
+};
+
 // When panel opens, we only need to fetch fetchPickList
 watch(
   () => props.isOpen,
@@ -161,6 +179,17 @@ watch(
     if (val) {
       errorMessage.value = '';
       password.value = '';
+      checkMobile();
+
+      // 添加窗口大小监听
+      const handleResize = () => checkMobile();
+      window.addEventListener('resize', handleResize);
+
+      // 清理监听器
+      watch(() => props.isOpen, (newVal) => {
+        if (!newVal) window.removeEventListener('resize', handleResize);
+      });
+
       try {
           const list = await authStore.fetchPickList();
           employees.value = list.employees || [];
@@ -315,6 +344,28 @@ const handleLogin = async () => {
   }
   50% {
     transform: translateY(-8px);
+  }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px), (max-height: 600px) {
+  .glass-card {
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+
+  .glass-card > div:first-child {
+    flex-shrink: 0; /* 防止header被压缩 */
+  }
+
+  .glass-card > div:nth-child(2) {
+    flex: 1; /* 允许body扩展 */
+    min-height: 0; /* 允许内部滚动 */
+  }
+
+  .glass-card > div:last-child,
+  .glass-card > div:nth-last-child(2) {
+    flex-shrink: 0; /* 防止footer被压缩 */
   }
 }
 </style>

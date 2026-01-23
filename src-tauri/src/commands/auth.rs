@@ -239,79 +239,33 @@ pub fn auth_accounts_list(app: AppHandle, token: String) -> Result<Vec<AuthAccou
 #[tauri::command]
 pub fn auth_bootstrap_required(app: AppHandle) -> Result<bool, String> {
     let conn = open_db(&app)?;
-    
-    // 检查是否已完成全部初始化步骤 (KV标记)
-    let completed: Option<String> = conn.query_row(
-        "SELECT v FROM kv WHERE k = 'setup_completed'",
-        [],
-        |r| r.get(0)
-    ).optional().map_err(|e| e.to_string())?;
 
-    if let Some(v) = completed {
-        if v == "true" {
-            return Ok(false); // 已完全初始化
-        }
+    // Check if admin account exists
+    let admin_exists: Option<String> = conn
+        .query_row(
+            "SELECT id FROM auth_accounts WHERE role = 'admin' AND is_active = 1 LIMIT 1",
+            [],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| format!("query admin: {e}"))?;
+
+    if admin_exists.is_none() {
+        return Ok(true);
     }
 
-    Ok(true) // 需要初始化
-}
+    // Check if there are active employees
+    let employee_count: Option<i64> = conn
+        .query_row(
+            "SELECT COUNT(*) FROM employees WHERE is_active = 1",
+            [],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| format!("query employees: {e}"))?;
 
-#[tauri::command]
-pub fn auth_complete_setup(app: AppHandle) -> Result<(), String> {
-    let conn = open_db(&app)?;
-    let now = now_ts()?;
-    conn.execute(
-        "INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('setup_completed', 'true', ?1)",
-        params![now]
-    ).map_err(|e| e.to_string())?;
-    // 完成后自动清除步骤标记
-    conn.execute("DELETE FROM kv WHERE k = 'setup_step'", []).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-pub fn auth_save_setup_step(app: AppHandle, step: i32) -> Result<(), String> {
-    let conn = open_db(&app)?;
-    let now = now_ts()?;
-    conn.execute(
-        "INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('setup_step', ?1, ?2)",
-        params![step.to_string(), now]
-    ).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-pub fn auth_save_setup_data(app: AppHandle, key: String, data: String) -> Result<(), String> {
-    let conn = open_db(&app)?;
-    let now = now_ts()?;
-    conn.execute(
-        "INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES(?1, ?2, ?3)",
-        params![format!("setup_data_{}", key), data, now]
-    ).map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-pub fn auth_get_setup_data(app: AppHandle, key: String) -> Result<String, String> {
-    let conn = open_db(&app)?;
-    let data: Option<String> = conn.query_row(
-        "SELECT v FROM kv WHERE k = ?",
-        [format!("setup_data_{}", key)],
-        |r| r.get(0)
-    ).optional().map_err(|e| e.to_string())?;
-    Ok(data.unwrap_or_default())
-}
-
-#[tauri::command]
-pub fn auth_get_setup_step(app: AppHandle) -> Result<i32, String> {
-    let conn = open_db(&app)?;
-    let step: Option<String> = conn.query_row(
-        "SELECT v FROM kv WHERE k = 'setup_step'",
-        [],
-        |r| r.get(0)
-    ).optional().map_err(|e| e.to_string())?;
-    
-    Ok(step.and_then(|v| v.parse().ok()).unwrap_or(1))
+    // Bootstrap is required if there are no active employees
+    Ok(employee_count.unwrap_or(0) == 0)
 }
 
 #[tauri::command]
@@ -325,16 +279,32 @@ pub fn auth_bootstrap_admin(app: AppHandle, input: AuthBootstrapAdminInput) -> R
         return Err(String::from("invalid"));
     }
 
-    let exists: Option<String> = conn
+    // Check if admin account exists
+    let admin_exists: Option<String> = conn
         .query_row(
             "SELECT id FROM auth_accounts WHERE role = 'admin' AND is_active = 1 LIMIT 1",
             [],
             |r| r.get(0),
         )
         .optional()
-        .map_err(|e| format!("query bootstrap exists: {e}"))?;
-    if exists.is_some() {
-        return Err(String::from("already_initialized"));
+        .map_err(|e| format!("query admin exists: {e}"))?;
+
+    if admin_exists.is_some() {
+        // If admin exists, check if there are active employees
+        // If no active employees, allow re-initialization (fresh install)
+        let employee_count: Option<i64> = conn
+            .query_row(
+                "SELECT COUNT(*) FROM employees WHERE is_active = 1",
+                [],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("query employees: {e}"))?;
+
+        if employee_count.unwrap_or(0) > 0 {
+            return Err(String::from("already_initialized"));
+        }
+        // If admin exists but no active employees, allow re-initialization
     }
 
     let now = now_ts()?;
@@ -370,21 +340,6 @@ pub fn auth_bootstrap_admin(app: AppHandle, input: AuthBootstrapAdminInput) -> R
         equity: 0.0,
         token,
     })
-}
-
-#[tauri::command]
-pub fn auth_dbg_fully_reset_accounts(app: tauri::AppHandle) -> Result<(), String> {
-    let conn = open_db(&app)?;
-    // 彻底清空所有业务数据和初始化标记
-    conn.execute("DELETE FROM auth_accounts", []).map_err(|e| e.to_string())?;
-    conn.execute("DELETE FROM kv", []).map_err(|e| e.to_string())?;
-    conn.execute("DELETE FROM employees", []).map_err(|e| e.to_string())?;
-    
-    // 清除会话
-    if let Ok(mut sessions) = auth_sessions().lock() {
-        sessions.clear();
-    }
-    Ok(())
 }
 
 #[tauri::command]
@@ -911,4 +866,37 @@ pub struct AuthAccountRow {
     pub is_hidden: bool,
     pub salary_base: f64,
     pub profile: Option<String>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct CloudSettingsInput {
+    pub enabled: bool,
+    pub supabase_url: String,
+    pub supabase_anon_key: String,
+}
+
+#[tauri::command]
+pub fn settings_save_cloud(app: AppHandle, input: CloudSettingsInput) -> Result<(), String> {
+    // Save cloud settings to KV store
+    crate::commands::kv::kv_set(
+        app,
+        "settings.cloud".to_string(),
+        serde_json::json!({
+            "enabled": input.enabled,
+            "supabase_url": input.supabase_url,
+            "supabase_anon_key": input.supabase_anon_key,
+        }),
+    )
+}
+
+#[tauri::command]
+pub fn settings_save_business(app: AppHandle, input: BusinessSettingsInput) -> Result<(), String> {
+    // Use the existing kv_set command to save business settings
+    crate::commands::kv::kv_set(
+        app,
+        "settings.business".to_string(),
+        serde_json::json!({
+            "equity_enabled": input.equity_enabled
+        }),
+    )
 }

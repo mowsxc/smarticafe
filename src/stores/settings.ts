@@ -111,141 +111,126 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  const init = () => {
+  const init = async () => {
     if (initialized.value) return
     initialized.value = true
 
-    const savedAnim = localStorage.getItem('animationSettings')
-    if (savedAnim) {
-      try {
-        animationSettings.value = { ...animationSettings.value, ...JSON.parse(savedAnim) }
-      } catch (error) {
-        console.warn('Failed to load animation settings')
-      }
-    }
+    try {
+      // Load all settings from Backend Database (The source of truth)
+      console.log('Loading settings from database...')
 
-    const savedBrand = localStorage.getItem('brandSettings')
-    if (savedBrand) {
-      try {
-        brandSettings.value = { ...brandSettings.value, ...JSON.parse(savedBrand) }
-      } catch (error) {
-        console.warn('Failed to load brand settings')
+      // Load brand settings
+      const brandRes = await tauriCmd<any>('auth_get_brand_settings')
+      if (brandRes) {
+        brandSettings.value.brandName = brandRes.brand_name || ''
+        brandSettings.value.storeName = brandRes.store_name || ''
+        console.log('Brand settings loaded from DB')
       }
-    }
 
-    // Load from Backend Database (The source of truth)
-    ;(async () => {
-      try {
-        const res = await tauriCmd<any>('auth_get_brand_settings')
-        if (res) {
-          brandSettings.value.brandName = res.brand_name
-          brandSettings.value.storeName = res.store_name
-          localStorage.setItem('brandSettings', JSON.stringify(brandSettings.value))
+      // Load cloud settings
+      const cloudRes = await tauriCmd<any>('kv_get', { key: 'settings.cloud' })
+      if (cloudRes && typeof cloudRes === 'object') {
+        cloudSettings.value = {
+          enabled: !!cloudRes.enabled,
+          supabaseUrl: String(cloudRes.supabaseUrl || ''),
+          supabaseAnonKey: String(cloudRes.supabaseAnonKey || ''),
         }
-      } catch (err) {
-        console.error('Failed to loading brand settings from DB:', err)
+        console.log('Cloud settings loaded from DB')
       }
-    })()
 
-    const savedLogo = localStorage.getItem('logoSettings')
-    if (savedLogo) {
-      try {
-        logoSettings.value = { ...logoSettings.value, ...JSON.parse(savedLogo) }
-      } catch (error) {
-        console.warn('Failed to load logo settings')
-      }
-    }
-
-    const savedCloud = localStorage.getItem('cloudSettings')
-    if (savedCloud) {
-      try {
-        cloudSettings.value = { ...cloudSettings.value, ...JSON.parse(savedCloud) }
-      } catch (error) {
-        console.warn('Failed to load cloud settings')
-      }
-    }
-
-    const savedBusiness = localStorage.getItem('businessSettings')
-    if (savedBusiness) {
-      try {
-        businessSettings.value = { ...businessSettings.value, ...JSON.parse(savedBusiness) }
-      } catch (error) {
-        console.warn('Failed to load business settings')
-      }
-    }
-
-    ;(async () => {
-      try {
-        const v = await tauriCmd<any>('kv_get', { key: 'settings.cloud' })
-        if (v && typeof v === 'object') {
-          cloudSettings.value = {
-            ...cloudSettings.value,
-            enabled: !!v.enabled,
-            supabaseUrl: String(v.supabaseUrl || ''),
-            supabaseAnonKey: String(v.supabaseAnonKey || ''),
-          }
-          localStorage.setItem('cloudSettings', JSON.stringify(cloudSettings.value))
+      // Load business settings
+      const businessRes = await tauriCmd<any>('kv_get', { key: 'settings.business' })
+      if (businessRes && typeof businessRes === 'object') {
+        businessSettings.value = {
+          passwordlessAll: businessRes.passwordlessAll === undefined ? businessSettings.value.passwordlessAll : !!businessRes.passwordlessAll,
+          equityEnabled: businessRes.equityEnabled === undefined ? businessSettings.value.equityEnabled : !!businessRes.equityEnabled,
         }
-      } catch {
-        // ignore
+        console.log('Business settings loaded from DB')
       }
-    })()
 
-    ;(async () => {
-      try {
-        const v = await tauriCmd<any>('kv_get', { key: 'settings.business' })
-        if (v && typeof v === 'object') {
-          businessSettings.value = {
-            ...businessSettings.value,
-            passwordlessAll: v.passwordlessAll === undefined ? businessSettings.value.passwordlessAll : !!v.passwordlessAll,
-            equityEnabled: v.equityEnabled === undefined ? businessSettings.value.equityEnabled : !!v.equityEnabled,
-          }
-          localStorage.setItem('businessSettings', JSON.stringify(businessSettings.value))
+      // Load animation settings (stored in KV)
+      const animRes = await tauriCmd<any>('kv_get', { key: 'settings.animation' })
+      if (animRes && typeof animRes === 'object') {
+        animationSettings.value = {
+          duration: animRes.duration || 200,
+          transitionType: animRes.transitionType || 'ease',
         }
-      } catch {
-        // ignore
+        console.log('Animation settings loaded from DB')
       }
-    })()
+
+      // Load logo settings (stored in KV)
+      const logoRes = await tauriCmd<any>('kv_get', { key: 'settings.logo' })
+      if (logoRes && typeof logoRes === 'object') {
+        logoSettings.value = { ...logoSettings.value, ...logoRes }
+        console.log('Logo settings loaded from DB')
+      }
+
+      console.log('All settings loaded from database successfully')
+    } catch (error) {
+      console.error('Failed to load settings from database:', error)
+    }
 
     applyAnimationDuration()
   }
 
   watch(animationSettings, () => {
-    localStorage.setItem('animationSettings', JSON.stringify(animationSettings.value))
     applyAnimationDuration()
-    enqueueSetting('animation', animationSettings.value)
+    ;(async () => {
+      try {
+        await tauriCmd('kv_set', { key: 'settings.animation', value: animationSettings.value })
+        enqueueSetting('animation', animationSettings.value)
+      } catch (error) {
+        console.error('Failed to save animation settings:', error)
+      }
+    })()
   }, { deep: true })
 
   watch(brandSettings, () => {
-    localStorage.setItem('brandSettings', JSON.stringify(brandSettings.value))
-    enqueueSetting('brand', brandSettings.value)
+    ;(async () => {
+      try {
+        await tauriCmd('auth_update_brand_settings', {
+          token: localStorage.getItem('auth_token') || '',
+          input: {
+            brand_name: brandSettings.value.brandName,
+            store_name: brandSettings.value.storeName
+          }
+        })
+        enqueueSetting('brand', brandSettings.value)
+      } catch (error) {
+        console.error('Failed to save brand settings:', error)
+      }
+    })()
   }, { deep: true })
 
   watch(logoSettings, () => {
-    localStorage.setItem('logoSettings', JSON.stringify(logoSettings.value))
-    enqueueSetting('logo', logoSettings.value)
+    ;(async () => {
+      try {
+        await tauriCmd('kv_set', { key: 'settings.logo', value: logoSettings.value })
+        enqueueSetting('logo', logoSettings.value)
+      } catch (error) {
+        console.error('Failed to save logo settings:', error)
+      }
+    })()
   }, { deep: true })
 
   watch(cloudSettings, () => {
-    localStorage.setItem('cloudSettings', JSON.stringify(cloudSettings.value))
-    enqueueSetting('cloud', { enabled: cloudSettings.value.enabled })
     ;(async () => {
       try {
         await tauriCmd('kv_set', { key: 'settings.cloud', value: cloudSettings.value })
-      } catch {
-        // ignore
+        enqueueSetting('cloud', { enabled: cloudSettings.value.enabled })
+      } catch (error) {
+        console.error('Failed to save cloud settings:', error)
       }
     })()
   }, { deep: true })
 
   watch(businessSettings, () => {
-    localStorage.setItem('businessSettings', JSON.stringify(businessSettings.value))
-    enqueueSetting('business', businessSettings.value)
     ;(async () => {
       try {
         await tauriCmd('kv_set', { key: 'settings.business', value: businessSettings.value })
-      } catch {
-        // ignore
+        enqueueSetting('business', businessSettings.value)
+      } catch (error) {
+        console.error('Failed to save business settings:', error)
       }
     })()
   }, { deep: true })
@@ -265,14 +250,14 @@ export const useSettingsStore = defineStore('settings', () => {
     syncToCloud,
     saveBrandSettings: async () => {
       try {
-          await tauriCmd('auth_update_brand_settings', { 
+          await tauriCmd('auth_update_brand_settings', {
               token: localStorage.getItem('auth_token') || '',
               input: {
                   brand_name: brandSettings.value.brandName,
                   store_name: brandSettings.value.storeName
               }
           });
-          localStorage.setItem('brandSettings', JSON.stringify(brandSettings.value));
+          console.log('Brand settings saved to database');
       } catch (err) {
           console.error('Failed to save brand settings:', err);
           throw err;

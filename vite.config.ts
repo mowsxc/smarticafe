@@ -16,14 +16,18 @@ export default defineConfig(async () => ({
   server: {
     port: 32520,
     strictPort: true,
-    host: true,
+    host: host || "0.0.0.0", // 绑定到所有网络接口以支持外部访问
     hmr: host
       ? {
           protocol: "ws",
           host,
           port: 1421,
         }
-      : undefined,
+      : {
+          protocol: "ws",
+          host: "0.0.0.0",
+          port: 1421,
+        },
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],

@@ -1,0 +1,17 @@
+# 一键清理并启动 Smarticafe 开发环境的命令行
+# 在 PowerShell 中执行以下命令：
+
+# === 一行完整命令 ===
+Get-Process -Name "smarticafe","node" -ErrorAction SilentlyContinue | Stop-Process -Force; $db="$env:APPDATA\com.aszeromo.smarticafe\smarticafe.db"; if(Test-Path $db){Remove-Item $db -Force}; Set-Location "E:\smarticafe\smarticafe-v2.0.0"; Start-Process -FilePath "cmd" -ArgumentList "/c npm run tauri dev" -NoNewWindow
+
+# === 分步执行命令 ===
+
+# 1. 停止进程
+Get-Process -Name "smarticafe","node" -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# 2. 清理数据库
+Remove-Item "$env:APPDATA\com.aszeromo.smarticafe\smarticafe.db" -Force -ErrorAction SilentlyContinue
+
+# 3. 切换到项目目录
+Set-Location "E:\smarticafe\smarticafe-v2.0.0"
+Start-Process -FilePath "cmd" -ArgumentList "/c npm run tauri dev" -NoNewWindow

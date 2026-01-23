@@ -1,5 +1,5 @@
 <template>
-  <div class="setup-view min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden">
+  <div class="setup-view min-h-screen w-full flex items-center justify-center p-6 relative overflow-y-auto scroll-smooth">
       <!-- ===== Ambient Background Effects ===== -->
       <div class="ambient-layer">
         <div class="ambient-orb ambient-orb--primary"></div>
@@ -14,14 +14,14 @@
       <div class="setup-container w-full max-w-[540px] z-10">
           
           <!-- ===== Progress Stepper ===== -->
-          <div class="stepper mb-6 px-4">
+          <div class="stepper mb-10 px-4">
             <div class="stepper-track">
-              <div class="stepper-track-fill" :style="{ width: `${((step - 1) / 2) * 100}%` }"></div>
+              <div class="stepper-track-fill" :style="{ width: `${((step - 1) / 5) * 100}%` }"></div>
             </div>
             <div class="stepper-nodes">
-              <div 
-                v-for="i in 3" 
-                :key="i" 
+              <div
+                v-for="i in 7"
+                :key="i"
                 class="stepper-node"
                 :class="{ 'is-active': step >= i, 'is-current': step === i }"
               >
@@ -35,7 +35,7 @@
                     <span v-else class="stepper-number">{{ i }}</span>
                   </div>
                 </div>
-                <span class="stepper-label">{{ ['账号配置', '云端同步', '完成启动'][i-1] }}</span>
+                <span class="stepper-label">{{ ['安装向导', '账号配置', '云端同步', '代持系统', '添加员工', '设置班次', '完成启动'][i-1] }}</span>
               </div>
             </div>
           </div>
@@ -46,10 +46,124 @@
             <div class="card-glow"></div>
             <div class="card-shimmer"></div>
             
-            <!-- ===== STEP 1: System Init ===== -->
+            <!-- ===== STEP 0: Mode Selection ===== -->
             <Transition name="step-slide" mode="out-in">
-              <div v-if="step === 1" key="step1" class="step-content">
-                <!-- Header with Version -->
+              <div v-if="step === 0" key="step0" class="step-content">
+                <!-- Header -->
+                <div class="step-header">
+                  <div class="step-icon step-icon--blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 12l2 2 4-4"/>
+                      <path d="M21 12c.552 0 1-.448 1-1V5c0-.552-.448-1-1-1H3c-.552 0-1 .448-1 1v6c0 .552.448 1 1 1"/>
+                      <path d="M3 12v6c0 .552.448 1 1 1h16c.552 0 1-.448 1-1v-6"/>
+                    </svg>
+                  </div>
+                  <h1 class="step-title">Smarticafe 安装向导</h1>
+                  <p class="step-subtitle">让我们开始设置您的收银系统</p>
+                </div>
+
+                <!-- Installation Guide -->
+                <div class="step-body">
+                  <div class="wizard-intro">
+                    <div class="intro-content">
+                      <div class="status-indicator">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M9 12l2 2 4-4"/>
+                          <path d="M21 12c.552 0 1-.448 1-1V5c0-.552-.448-1-1-1H3c-.552 0-1 .448-1 1v6c0 .552.448 1 1 1"/>
+                          <path d="M3 12v6c0 .552.448 1 1 1h16c.552 0 1-.448 1-1v-6"/>
+                        </svg>
+                        <span v-if="hasExistingData" class="status-text status--detected">检测到现有数据</span>
+                        <span v-else class="status-text status--fresh">全新安装</span>
+                      </div>
+
+                      <div v-if="hasExistingData" class="data-preview">
+                        <h3>发现的现有数据</h3>
+                        <p class="data-desc">系统检测到您之前已配置过 Smarticafe，以下是找到的数据：</p>
+                        <div class="data-items">
+                          <div v-if="dataSummary" class="data-item">
+                            <span class="data-icon">💾</span>
+                            <span>{{ dataSummary }}</span>
+                          </div>
+                        </div>
+                        <div class="wizard-tip">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 8v4"/>
+                            <path d="M12 16h.01"/>
+                          </svg>
+                          <span>您可以选择恢复这些数据，或重新开始全新安装</span>
+                        </div>
+                      </div>
+
+                      <div class="wizard-options">
+                        <h3>请选择安装方式</h3>
+                        <div class="option-cards">
+                          <label class="option-card" :class="{ 'is-selected': selectedMode === 'import' && hasExistingData }">
+                            <input
+                              type="radio"
+                              :value="'import'"
+                              v-model="selectedMode"
+                              :disabled="!hasExistingData"
+                              class="option-radio"
+                            />
+                            <div class="option-content">
+                              <div class="option-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                  <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                              </div>
+                              <div class="option-text">
+                                <h4>恢复现有数据</h4>
+                                <p v-if="hasExistingData">导入之前保存的设置和数据</p>
+                                <p v-else class="option-disabled">未检测到现有数据</p>
+                              </div>
+                            </div>
+                          </label>
+
+                          <label class="option-card" :class="{ 'is-selected': selectedMode === 'fresh' }">
+                            <input
+                              type="radio"
+                              :value="'fresh'"
+                              v-model="selectedMode"
+                              class="option-radio"
+                            />
+                            <div class="option-content">
+                              <div class="option-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                              </div>
+                              <div class="option-text">
+                                <h4>全新安装</h4>
+                                <p>重新配置所有设置，适合首次使用</p>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="btn-group">
+                  <button
+                    @click="handleModeConfirm"
+                    class="btn-primary"
+                    :disabled="!selectedMode"
+                  >
+                    <span>{{ selectedMode === 'import' ? '开始恢复数据' : '开始全新安装' }}</span>
+                    <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ===== STEP 1: System Init ===== -->
+              <div v-else-if="step === 1" key="step1" class="step-content">
+                <!-- Header -->
                 <div class="step-header">
                   <div class="step-icon step-icon--orange">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -59,17 +173,10 @@
                   </div>
                   <h1 class="step-title">初始化系统</h1>
                   <p class="step-subtitle">设置品牌信息与超级管理员账号</p>
-                  <!-- 系统版本信息 -->
-                  <div class="version-badge">
-                    <span class="version-label-premium">SMARTICAFE</span>
-                    <span class="version-divider">·</span>
-                    <span class="version-number">V2.0.0</span>
-                  </div>
                 </div>
 
-                <!-- Scrollable Form Container -->
+                <!-- Form Fields -->
                 <div class="step-body">
-                  <!-- 品牌设置 Section -->
                   <div class="form-section">
                     <div class="form-section-label" :class="{ 'is-focused': isBrandFocused }">
                       <div class="label-icon-wrap">
@@ -90,7 +197,7 @@
                           placeholder="如：创新意电竞"
                           class="field-input"
                           @focus="isBrandFocused = true"
-                          @blur="handleBrandBlur"
+                          @blur="isBrandFocused = false"
                         />
                       </div>
                       <div class="form-field">
@@ -101,7 +208,7 @@
                           placeholder="如：总店"
                           class="field-input"
                           @focus="isBrandFocused = true"
-                          @blur="handleStoreBlur"
+                          @blur="isBrandFocused = false"
                         />
                       </div>
                     </div>
@@ -109,8 +216,7 @@
 
                   <div class="form-divider"></div>
 
-                  <!-- 管理员账号 Section -->
-                  <div class="form-section" ref="adminSectionRef">
+                  <div class="form-section">
                     <div class="form-section-label" :class="{ 'is-focused': isAdminFocused }">
                       <div class="label-icon-wrap">
                         <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -124,7 +230,6 @@
                     <div class="form-field">
                       <label class="field-label">显示名称</label>
                       <input 
-                        ref="displayNameInputRef"
                         v-model="form.displayName" 
                         type="text" 
                         placeholder="如：店长"
@@ -158,17 +263,17 @@
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <!-- Action Button -->
-                  <div class="step-footer-inline">
-                    <button @click="handleStep1" :disabled="!isValidStep1 || loading" class="btn-primary">
-                      <div v-if="loading" class="btn-spinner"></div>
-                      <span>{{ loading ? '正在处理...' : '下一步：云端设置' }}</span>
-                      <svg v-if="!loading" class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                      </svg>
-                    </button>
-                  </div>
+                <!-- Action Button -->
+                <div class="btn-group">
+                  <button @click="handleStep1" :disabled="!isValidStep1 || loading" class="btn-primary">
+                    <div v-if="loading" class="btn-spinner"></div>
+                    <span>{{ loading ? '正在处理...' : '下一步：云端设置' }}</span>
+                    <svg v-if="!loading" class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
                 </div>
               </div>
 
@@ -209,30 +314,22 @@
                     <div v-if="cloudForm.enabled" class="cloud-config">
                       <div class="form-field">
                         <label class="field-label">Project URL</label>
-                        <input 
-                          v-model="cloudForm.url" 
-                          type="text" 
+                        <input
+                          v-model="cloudForm.url"
+                          type="text"
                           placeholder="https://xxx.supabase.co"
                           class="field-input field-input--mono"
                         />
                       </div>
                       <div class="form-field">
                         <label class="field-label">Anon Key</label>
-                        <input 
-                          v-model="cloudForm.key" 
-                          type="password" 
+                        <input
+                          v-model="cloudForm.key"
+                          type="password"
                           placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                           class="field-input field-input--mono"
                         />
                       </div>
-                      <button class="btn-link" @click="testConnection">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <polyline points="23 4 23 10 17 10"/>
-                          <polyline points="1 20 1 14 7 14"/>
-                          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                        测试连接
-                      </button>
                     </div>
                   </Transition>
 
@@ -250,84 +347,255 @@
                     <p>云端同步已禁用</p>
                     <span>数据将仅保存在本地设备</span>
                   </div>
+                </div>
 
-                  <!-- Action Buttons (Inline) -->
-                  <div class="step-footer-inline">
-                    <div class="btn-group">
-                      <button @click="handleCloudSkip" class="btn-secondary">
-                        {{ cloudForm.enabled ? '暂不启用' : '跳过配置' }}
-                      </button>
-                      <button @click="handleStep2" class="btn-primary" :disabled="cloudForm.enabled && (!cloudForm.url || !cloudForm.key)">
-                        <span>继续下一步</span>
-                        <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                      </button>
+                <!-- Action Buttons -->
+                <div class="btn-group">
+                  <button @click="handleStepBack" class="btn-secondary">
+                    上一步
+                  </button>
+                  <button @click="handleStep2" class="btn-primary" :disabled="cloudForm.enabled && (!cloudForm.url || !cloudForm.key)">
+                    <span>继续下一步</span>
+                    <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ===== STEP 3: Equity System ===== -->
+              <div v-else-if="step === 3" key="step3" class="step-content">
+                <!-- Header -->
+                <div class="step-header">
+                  <div class="step-icon step-icon--purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="9" y1="9" x2="15" y2="15"/>
+                      <line x1="15" y1="9" x2="9" y2="15"/>
+                    </svg>
+                  </div>
+                  <h1 class="step-title">代持系统设置</h1>
+                  <p class="step-subtitle">启用股权代持功能，支持股东间权益管理</p>
+                </div>
+
+                <!-- Form Body -->
+                <div class="step-body">
+                <label class="equity-toggle-card" :class="{ 'is-enabled': equityForm.enabled }">
+                  <div class="toggle-switch">
+                    <input type="checkbox" v-model="equityForm.enabled" class="toggle-input">
+                    <div class="toggle-track">
+                      <div class="toggle-thumb"></div>
+                    </div>
+                  </div>
+                  <div class="toggle-content">
+                    <span class="toggle-title">开启股权代持系统</span>
+                    <span class="toggle-desc">允许股东将股权委托他人代持，支持复杂的股权结构</span>
+                  </div>
+                  <div class="toggle-badge" :class="equityForm.enabled ? 'badge--on' : 'badge--off'">
+                    {{ equityForm.enabled ? '已开启' : '已关闭' }}
+                  </div>
+                </label>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="btn-group">
+                <button @click="handleStepBack" class="btn-secondary">
+                  上一步
+                </button>
+                <button @click="handleStep3" class="btn-primary">
+                  <span>继续下一步</span>
+                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- ===== STEP 4: Add Employee ===== -->
+            <div v-else-if="step === 4" key="step4" class="step-content">
+              <!-- Header -->
+              <div class="step-header">
+                <div class="step-icon step-icon--blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <h1 class="step-title">添加员工</h1>
+                <p class="step-subtitle">添加收银员账号，用于日常收银操作</p>
+              </div>
+
+              <!-- Form Body -->
+              <div class="step-body">
+                <div class="form-section">
+                  <div class="form-section-label">
+                    <div class="label-icon-wrap">
+                      <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </svg>
+                      <div class="label-icon-glow"></div>
+                    </div>
+                    <span class="label-text">员工信息</span>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-field">
+                      <label class="field-label">员工姓名</label>
+                      <input
+                        v-model="employeeForm.name"
+                        type="text"
+                        placeholder="如：小王、小李"
+                        class="field-input"
+                      />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- ===== STEP 3: Complete ===== -->
-              <div v-else-if="step === 3" key="step3" class="step-content">
-                <div class="step-body step-content--center">
-                  <!-- Success Animation -->
-                  <div class="success-badge">
-                    <div class="success-ring success-ring--outer"></div>
-                    <div class="success-ring success-ring--inner"></div>
-                    <div class="success-icon">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <polyline points="20 6 9 17 4 12"></polyline>
+              <!-- Action Buttons -->
+              <div class="btn-group">
+                <button @click="handleStepBack" class="btn-secondary">
+                  上一步
+                </button>
+                <button @click="handleStep4" class="btn-primary" :disabled="!employeeForm.name.trim()">
+                  <span>继续下一步</span>
+                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- ===== STEP 5: Shift Setup ===== -->
+            <div v-else-if="step === 5" key="step5" class="step-content">
+              <!-- Header -->
+              <div class="step-header">
+                <div class="step-icon step-icon--green">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <h1 class="step-title">班次设置</h1>
+                <p class="step-subtitle">创建第一个工作班次，开始营业</p>
+              </div>
+
+              <!-- Form Body -->
+              <div class="step-body">
+                <div class="form-section">
+                  <div class="form-section-label">
+                    <div class="label-icon-wrap">
+                      <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
                       </svg>
+                      <div class="label-icon-glow"></div>
                     </div>
-                    <div class="success-particles">
-                      <span v-for="i in 8" :key="i" class="particle" :style="{ '--i': i }"></span>
+                    <span class="label-text">班次信息</span>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-field">
+                      <label class="field-label">日期</label>
+                      <input
+                        v-model="shiftForm.date"
+                        type="date"
+                        class="field-input"
+                      />
+                    </div>
+                    <div class="form-field">
+                      <label class="field-label">班次</label>
+                      <select v-model="shiftForm.shiftType" class="field-input">
+                        <option value="白班">白班</option>
+                        <option value="晚班">晚班</option>
+                      </select>
                     </div>
                   </div>
+                  <div class="form-row">
+                    <div class="form-field">
+                      <label class="field-label">当班人</label>
+                        <select v-model="shiftForm.employee" class="field-input">
+                          <option v-if="employees.length === 0" disabled>请先添加员工</option>
+                          <option v-for="emp in employees" :key="emp.id" :value="emp.id">
+                            {{ emp.name }}
+                          </option>
+                        </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                  <!-- Header -->
-                  <div class="step-header">
-                    <h1 class="step-title step-title--success">配置完成！</h1>
-                    <p class="step-subtitle">系统已准备就绪，祝您生意兴隆 🎉</p>
-                  </div>
+              <!-- Action Buttons -->
+              <div class="btn-group">
+                <button @click="handleStepBack" class="btn-secondary">
+                  上一步
+                </button>
+                <button @click="handleStep5" class="btn-primary" :disabled="!shiftForm.employee">
+                  <span>创建班次并完成</span>
+                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-                  <!-- Summary Card -->
-                  <div class="summary-card">
-                    <div class="summary-row">
-                      <span class="summary-label">店铺信息</span>
-                      <div class="summary-value">
-                        <span class="brand-name">{{ form.brandName }}</span>
-                        <span class="divider">/</span>
-                        <span class="store-name">{{ form.storeName }}</span>
-                      </div>
-                    </div>
-                    <div class="summary-row">
-                      <span class="summary-label">管理员</span>
-                      <div class="summary-value">
-                        <span>{{ form.displayName }}</span>
-                        <span class="account-tag">@{{ form.pickName }}</span>
-                      </div>
-                    </div>
-                    <div class="summary-row">
-                      <span class="summary-label">云端服务</span>
-                      <div class="summary-value">
-                        <span class="status-indicator" :class="cloudForm.enabled ? 'status--online' : 'status--offline'">
-                          <span class="status-dot"></span>
-                          {{ cloudForm.enabled ? '已启用' : '未启用' }}
-                        </span>
-                      </div>
-                    </div>
+            <!-- ===== STEP 6: Complete ===== -->
+            <div v-else-if="step === 6" key="step6" class="step-content step-content--center">
+                <!-- Success Animation -->
+                <div class="success-badge">
+                  <div class="success-ring success-ring--outer"></div>
+                  <div class="success-ring success-ring--inner"></div>
+                  <div class="success-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
                   </div>
+                  <div class="success-particles">
+                    <span v-for="i in 8" :key="i" class="particle" :style="{ '--i': i }"></span>
+                  </div>
+                </div>
 
-                  <!-- Final Action -->
-                  <div class="step-footer-inline">
-                    <button @click="handleStep3" class="btn-primary btn-primary--success">
-                      <span>进入收银台</span>
-                      <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                      </svg>
-                    </button>
+                <!-- Header -->
+                <div class="step-header">
+                  <h1 class="step-title step-title--success">配置完成！</h1>
+                  <p class="step-subtitle">系统已准备就绪，祝您生意兴隆 🎉</p>
+                </div>
+
+                <!-- Summary Card -->
+                <div class="summary-card">
+                  <div class="summary-row">
+                    <span class="summary-label">店铺信息</span>
+                    <div class="summary-value">
+                      <span class="brand-name">{{ form.brandName }}</span>
+                      <span class="divider">/</span>
+                      <span class="store-name">{{ form.storeName }}</span>
+                    </div>
                   </div>
+                  <div class="summary-row">
+                    <span class="summary-label">管理员</span>
+                    <div class="summary-value">
+                      <span>{{ form.displayName }}</span>
+                      <span class="account-tag">@{{ form.pickName }}</span>
+                    </div>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">云端服务</span>
+                    <div class="summary-value">
+                      <span class="status-indicator" :class="cloudForm.enabled ? 'status--online' : 'status--offline'">
+                        <span class="status-dot"></span>
+                        {{ cloudForm.enabled ? '已启用' : '未启用' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Final Action -->
+                <div class="btn-group">
+                  <button @click="handleStep6" class="btn-primary btn-primary--success">
+                    <span>进入收银台</span>
+                    <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </Transition>
@@ -348,7 +616,6 @@
 
             <!-- Debug Tools (Hidden) -->
             <div class="debug-tools">
-              <button @click="resetSystem" class="debug-btn debug-btn--danger">🔥 RESET SYSTEM</button>
               <button @click="injectTest" class="debug-btn">⚠️ Inject Test</button>
               <button @click="simulateTraffic" class="debug-btn">⚡ Simulate</button>
             </div>
@@ -358,7 +625,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useSettingsStore } from '../stores/settings';
@@ -368,7 +635,174 @@ const router = useRouter();
 const authStore = useAuthStore();
 const settingsStore = useSettingsStore();
 
-// 1. 数据定义 (最优先)
+// 实时同步检测
+let syncInterval: NodeJS.Timeout | null = null;
+
+const startSyncCheck = () => {
+  syncInterval = setInterval(async () => {
+    try {
+      const needsBootstrap = await authStore.bootstrapRequired();
+      // 如果其他设备完成了初始化，给出提示但不自动刷新
+      if (!needsBootstrap && step.value === 1) {
+        console.log('检测到其他设备已完成初始化，请手动刷新页面');
+        // 显示提示但不自动刷新，避免打断用户输入
+        errorMsg.value = '⚠️ 检测到其他设备已完成系统初始化，请刷新页面查看最新状态';
+      }
+    } catch (error) {
+      // 忽略错误，继续轮询
+    }
+  }, 5000); // 每5秒检查一次，减少频率
+};
+
+const stopSyncCheck = () => {
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
+};
+
+// Check for existing data
+const checkExistingData = async () => {
+  try {
+    console.log('检查现有数据...');
+
+    // Check if bootstrap is already done
+    const needsBootstrap = await authStore.bootstrapRequired();
+    if (!needsBootstrap) {
+      console.log('系统已初始化，跳转到主界面');
+      router.replace('/');
+      return;
+    }
+
+    // Check for existing database data
+    const dataChecks = await Promise.allSettled([
+      tauriCmd('employees_list').catch(() => []),
+      tauriCmd('shift_get_active').catch(() => null),
+      tauriCmd('auth_get_brand_settings').catch(() => null),
+    ]);
+
+    const employees = dataChecks[0].status === 'fulfilled' ? dataChecks[0].value : [];
+    const activeShift = dataChecks[1].status === 'fulfilled' ? dataChecks[1].value : null;
+    const brandSettings = dataChecks[2].status === 'fulfilled' ? dataChecks[2].value : null;
+
+    const employeesArray = Array.isArray(employees) ? employees as any[] : [];
+    const activeEmployees = employeesArray.filter((emp: any) => emp.is_active !== false);
+    const hasEmployees = activeEmployees.length > 0;
+    const hasActiveShift = !!activeShift;
+    const hasBrandSettings = !!brandSettings;
+
+    hasExistingData.value = Boolean(hasEmployees || hasActiveShift || hasBrandSettings);
+
+    if (hasExistingData.value) {
+      const dataItems = [];
+      if (hasEmployees) dataItems.push(`${activeEmployees.length}个员工`);
+      if (hasActiveShift) dataItems.push('活跃班次');
+      if (hasBrandSettings) dataItems.push('品牌设置');
+      dataSummary.value = dataItems.join('、');
+      console.log(`检测到现有数据: ${dataSummary.value}`);
+    } else {
+      // No existing data, default to fresh install
+      selectedMode.value = 'fresh';
+      console.log('未检测到现有数据，默认选择全新安装');
+    }
+  } catch (error) {
+    console.error('检查现有数据失败:', error);
+    // Default to fresh install on error
+    selectedMode.value = 'fresh';
+  }
+};
+
+const handleModeConfirm = async () => {
+  if (!selectedMode.value) return;
+
+  if (selectedMode.value === 'import') {
+    // For import mode, we can skip some steps and go directly to employee/shift setup
+    console.log('选择导入模式，跳过基础配置步骤');
+    step.value = 4; // Go directly to employee setup
+  } else {
+    // Fresh install mode - clear existing data first
+    console.log('选择全新安装模式，开始清除现有数据...');
+
+    try {
+      // 清除员工数据
+      console.log('清除员工数据...');
+      const employees = await tauriCmd('employees_list') as any[];
+      for (const emp of employees || []) {
+        try {
+          await tauriCmd('employee_set_active', { id: emp.id, is_active: false });
+        } catch (e) {
+          console.warn('清除员工失败:', emp.id, e);
+        }
+      }
+
+      // 清除活跃班次
+      console.log('清除活跃班次...');
+      try {
+        // 这里可以添加清除班次数据的逻辑
+        // 目前shift_get_active返回null，所以这里不需要特殊处理
+        console.log('班次数据检查完成');
+      } catch (e) {
+        console.warn('清除活跃班次失败:', e);
+      }
+
+
+      // 清除设置数据（全新安装时清除所有设置）
+      console.log('重置业务设置...');
+      try {
+        await tauriCmd('settings_save_business', { equity_enabled: false });
+      } catch (e) {
+        console.warn('重置业务设置失败:', e);
+      }
+
+      // 清除品牌设置（全新安装时重新设置）
+      console.log('清除品牌设置...');
+      try {
+        // 清除品牌设置相关的所有KV数据
+        await tauriCmd('kv_remove', { key: 'brand_name' });
+        await tauriCmd('kv_remove', { key: 'store_name' });
+        await tauriCmd('kv_remove', { key: 'settings.brand' });
+      } catch (e) {
+        console.warn('清除品牌设置失败:', e);
+      }
+
+      console.log('✅ 数据清除完成，开始全新安装');
+
+      // 重新检查数据状态
+      hasExistingData.value = false;
+      dataSummary.value = '';
+
+      step.value = 1; // Start from system init
+    } catch (error) {
+      console.error('❌ 清除数据失败:', error);
+      errorMsg.value = '清除数据失败，请重试';
+      return;
+    }
+  }
+};
+
+onMounted(async () => {
+  await checkExistingData();
+  startSyncCheck();
+});
+
+onUnmounted(() => {
+  stopSyncCheck();
+});
+
+const step = ref(0);
+const loading = ref(false);
+const errorMsg = ref('');
+
+// Mode selection
+const selectedMode = ref<'import' | 'fresh' | null>(null);
+const hasExistingData = ref(false);
+const dataSummary = ref('');
+
+// Form focus states for icon glow effects
+const isBrandFocused = ref(false);
+const isAdminFocused = ref(false);
+
+// Step 1: System Init
 const form = reactive({
     pickName: '',
     displayName: '',
@@ -377,105 +811,6 @@ const form = reactive({
     storeName: '',
 });
 
-const cloudForm = reactive({
-    enabled: false,
-    url: '',
-    key: ''
-});
-
-// 2. 状态定义
-const step = ref(1);
-const loading = ref(false);
-const errorMsg = ref('');
-const connectionStatus = ref<'none' | 'testing' | 'success' | 'error'>('none');
-
-// 3. 挂载与监听
-import { onMounted, watch } from 'vue';
-
-onMounted(async () => {
-  try {
-    const savedStep = await tauriCmd<number>('auth_get_setup_step');
-    if (savedStep) step.value = savedStep;
-    
-    const basicData = await tauriCmd<string>('auth_get_setup_data', { key: 'basic' });
-    if (basicData) Object.assign(form, JSON.parse(basicData));
-    
-    const cloudData = await tauriCmd<string>('auth_get_setup_data', { key: 'cloud' });
-    if (cloudData) Object.assign(cloudForm, JSON.parse(cloudData));
-  } catch (e) {
-    console.warn('Load setup data error', e);
-  }
-});
-
-// 核心逻辑：增加防抖，防止手机端请求过频
-let saveTimer: any = null;
-const debouncedSave = (key: string, data: any) => {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-        tauriCmd('auth_save_setup_data', { key, data: JSON.stringify(data) }).catch(() => {});
-    }, 800); 
-};
-
-watch(() => form, (newVal) => debouncedSave('basic', newVal), { deep: true });
-watch(() => cloudForm, (newVal) => debouncedSave('cloud', newVal), { deep: true });
-
-const saveProgress = async (newStep: number) => {
-  step.value = newStep;
-  await tauriCmd('auth_save_setup_step', { step: newStep });
-};
-
-// Form focus states for icon glow effects
-const isBrandFocused = ref(false);
-const isAdminFocused = ref(false);
-
-// Refs for auto-scroll functionality
-const formScrollRef = ref<HTMLDivElement | null>(null);
-const adminSectionRef = ref<HTMLDivElement | null>(null);
-const displayNameInputRef = ref<HTMLInputElement | null>(null);
-
-// Auto-scroll to admin section when brand fields are completed
-const scrollToAdminSection = () => {
-  if (!formScrollRef.value || !adminSectionRef.value) return;
-  
-  // Smooth scroll to admin section
-  adminSectionRef.value.scrollIntoView({ 
-    behavior: 'smooth', 
-    block: 'start'
-  });
-  
-  // Focus on first admin field after scroll
-  setTimeout(() => {
-    displayNameInputRef.value?.focus();
-  }, 400);
-};
-
-// Handle brand field blur - check if should auto-scroll
-const handleBrandBlur = () => {
-  isBrandFocused.value = false;
-  
-  // If both brand fields are filled, scroll to admin section
-  if (form.brandName && form.storeName) {
-    // Small delay to allow Tab navigation to work naturally
-    setTimeout(() => {
-      // Only scroll if no admin field is focused
-      if (!isAdminFocused.value && !form.displayName) {
-        scrollToAdminSection();
-      }
-    }, 150);
-  }
-};
-
-const handleStoreBlur = () => {
-  isBrandFocused.value = false;
-  
-  if (form.brandName && form.storeName && !form.displayName) {
-    setTimeout(() => {
-      scrollToAdminSection();
-    }, 150);
-  }
-};
-
-// 4. 初始化业务 (Step 1: System Init 已删除重复定义)
 const injectTest = async () => {
     if(!confirm("Create Full Test Data? (MoJian, CuiGuoli, etc.)")) return;
     try {
@@ -531,44 +866,38 @@ const simulateTraffic = async () => {
     }
 };
 
-// Step 2: Cloud (已在上方定义)
+// Step 2: Cloud
+const cloudForm = reactive({
+    enabled: false,
+    url: '',
+    key: ''
+});
+
+// Step 3: Equity System
+const equityForm = reactive({
+    enabled: false
+});
+
+// Step 4: Employee
+const employeeForm = reactive({
+    name: ''
+});
+
+// Step 5: Shift
+const shiftForm = reactive({
+    date: new Date().toISOString().split('T')[0], // Today's date
+    shiftType: '晚班',
+    employee: ''
+});
+
+// Employees list (will be populated after employee creation)
+const employees = ref<any[]>([]);
+
 
 const isValidStep1 = computed(() => {
     return form.pickName && form.displayName && form.password && form.brandName && form.storeName;
 });
 
-const testConnection = async () => {
-    if (!cloudForm.url || !cloudForm.key) {
-        errorMsg.value = '请先填写项目 URL 和 API Key';
-        return;
-    }
-    
-    connectionStatus.value = 'testing';
-    errorMsg.value = '';
-    
-    try {
-        // 🚀 真逻辑：直接探测 Supabase REST API
-        const response = await fetch(`${cloudForm.url}/rest/v1/`, {
-            method: 'GET',
-            headers: {
-                'apikey': cloudForm.key,
-                'Authorization': `Bearer ${cloudForm.key}`
-            }
-        });
-        
-        if (response.ok || response.status === 404) {
-             connectionStatus.value = 'success';
-             alert('✅ 连接成功！云端同步服务已就绪。');
-        } else {
-             throw new Error(`连接失败 (HTTP ${response.status})`);
-        }
-    } catch (e: any) {
-        connectionStatus.value = 'error';
-        errorMsg.value = '连接失败，请检查 URL、API Key 或网络连接。';
-    } finally {
-        setTimeout(() => { if(connectionStatus.value === 'testing') connectionStatus.value = 'none' }, 500);
-    }
-};
 
 const handleStep1 = async () => {
     if (loading.value) return;
@@ -576,61 +905,151 @@ const handleStep1 = async () => {
     errorMsg.value = '';
 
     try {
+        // 创建管理员账号
         await authStore.bootstrapAdmin(form);
-        
+        console.log('管理员账号创建成功');
+
+        // 保存品牌设置
         settingsStore.brandSettings.brandName = form.brandName;
         settingsStore.brandSettings.storeName = form.storeName;
-        
-        saveProgress(2); // 持久化进度
+
+        // 保存云设置
+        await tauriCmd('settings_save_cloud', {
+            enabled: cloudForm.enabled,
+            supabase_url: cloudForm.enabled ? cloudForm.url : '',
+            supabase_anon_key: cloudForm.enabled ? cloudForm.key : ''
+        });
+        console.log('云设置已保存');
+
+        // 保存代持系统设置
+        await tauriCmd('settings_save_business', {
+            equity_enabled: equityForm.enabled
+        });
+        console.log('代持系统设置已保存');
+
+        step.value = 2;
     } catch (e: any) {
-        // 如果后端提示已初始化，我们也认为第一步过了，允许进入下一步
-        if (e.message?.includes('already_initialized')) {
-            saveProgress(2);
-            return;
+        // In browser mode, show specific error
+        if (e.message.includes('数据库服务不可用')) {
+            errorMsg.value = '⚠️ 浏览器模式不支持初始化。请使用以下方式：\n\n1. 启动 Tauri 桌面应用：npm run tauri dev\n2. 或在生产环境中使用已编译的应用';
+        } else {
+            errorMsg.value = e.message || '初始化失败';
         }
-        errorMsg.value = e.message || '初始化失败，请重试';
     } finally {
         loading.value = false;
     }
 };
 
-const handleCloudSkip = () => {
-    cloudForm.enabled = false;
-    handleStep2();
-}
 
-const handleStep2 = () => {
-    settingsStore.cloudSettings.enabled = cloudForm.enabled;
-    if (cloudForm.enabled) {
-        settingsStore.cloudSettings.supabaseUrl = cloudForm.url;
-        settingsStore.cloudSettings.supabaseAnonKey = cloudForm.key;
-    }
-    saveProgress(3); // 持久化进度
-};
+const handleStep2 = async () => {
+    console.log('🔄 开始保存云设置...');
 
-const resetSystem = async () => {
-    if(!confirm("⚠️ 确定要彻底重置系统吗？这将清空所有账号和设置并回到初始化状态。")) return;
+    // 保存到后端数据库
     try {
-        await tauriCmd('auth_dbg_fully_reset_accounts'); 
-        localStorage.removeItem('smarticafe_setup_step'); // 清除记忆
-        alert("✅ 系统已重置，准备开始重新初始化！");
-        window.location.reload();
-    } catch(e: any) {
-        alert("Reset failed: " + e);
+        await tauriCmd('settings_save_cloud', {
+            enabled: cloudForm.enabled,
+            supabase_url: cloudForm.enabled ? cloudForm.url : '',
+            supabase_anon_key: cloudForm.enabled ? cloudForm.key : ''
+        });
+        console.log('✅ 云设置已保存到后端数据库');
+    } catch (error) {
+        console.error('❌ 保存云设置失败:', error);
+        throw error;
     }
+
+    step.value = 3;
 };
 
 const handleStep3 = async () => {
+    console.log('🔄 开始保存代持系统设置...');
+
+    // 保存到后端数据库
     try {
-        loading.value = true;
-        await tauriCmd('auth_complete_setup'); // 🚀 真逻辑：写入数据库完成标记
-        localStorage.removeItem('smarticafe_setup_step'); // 清除临时进度
-        router.replace('/');
-    } catch (e: any) {
-        errorMsg.value = '完成初始化失败: ' + e;
-    } finally {
-        loading.value = false;
+        await tauriCmd('settings_save_business', {
+            equity_enabled: equityForm.enabled
+        });
+        console.log('✅ 代持系统设置已保存');
+    } catch (error) {
+        console.error('❌ 保存代持系统设置失败:', error);
+        throw error;
     }
+
+    step.value = 4;
+};
+
+const handleStep4 = async () => {
+    console.log('🔄 开始添加员工...');
+
+    if (!employeeForm.name.trim()) {
+        throw new Error('请输入员工姓名');
+    }
+
+    // 添加员工到后端数据库
+    try {
+        const result = await tauriCmd('employee_create', {
+            name: employeeForm.name.trim(),
+            is_active: true
+        });
+        console.log('✅ 员工已添加:', result);
+
+        // 更新员工列表
+        employees.value = await tauriCmd('employees_list');
+        console.log('✅ 员工列表已更新:', employees.value);
+
+    } catch (error) {
+        console.error('❌ 添加员工失败:', error);
+        throw error;
+    }
+
+    step.value = 5;
+};
+
+const handleStep5 = async () => {
+    console.log('🔄 开始创建班次...');
+
+    if (!shiftForm.employee) {
+        throw new Error('请选择当班人');
+    }
+
+    // 创建班次
+    try {
+        const result = await tauriCmd('shift_create', {
+            date_ymd: shiftForm.date,
+            shift_type: shiftForm.shiftType,
+            employee_id: shiftForm.employee,
+            start_time: new Date().toISOString()
+        });
+        console.log('✅ 班次已创建:', result);
+
+        // 设置当前班次为活跃状态
+        await tauriCmd('shift_start', { shift_id: (result as any).id });
+
+    } catch (error) {
+        console.error('❌ 创建班次失败:', error);
+        throw error;
+    }
+
+    step.value = 6;
+};
+
+
+const handleStepBack = () => {
+    step.value = Math.max(0, step.value - 1);
+};
+
+const handleStep6 = async () => {
+    // 确保所有设置都被保存
+    try {
+        await settingsStore.saveBrandSettings();
+        console.log('✅ 初始化设置保存完成');
+    } catch (error) {
+        console.error('❌ 保存品牌设置失败:', error);
+    }
+
+    // 延迟一下确保所有异步保存完成
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    router.replace('/');
 };
 </script>
 
@@ -670,14 +1089,257 @@ const handleStep3 = async () => {
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  
+
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
   --radius-xl: 32px;
   --radius-full: 9999px;
-  
-  background: var(--surface-base);
+}
+
+/* ===== Installation Wizard Styles ===== */
+.wizard-intro {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.intro-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-soft);
+}
+
+.status-indicator svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--brand-emerald);
+  flex-shrink: 0;
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.status--detected {
+  color: var(--brand-orange);
+}
+
+.status--fresh {
+  color: var(--brand-emerald);
+}
+
+.data-preview {
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--surface-card), rgba(255, 102, 51, 0.02));
+  border: 1px solid rgba(255, 102, 51, 0.1);
+}
+
+.data-preview h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.data-desc {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.data-items {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.data-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-soft);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.data-icon {
+  font-size: 1rem;
+}
+
+.wizard-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.wizard-tip svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--brand-orange);
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.wizard-tip span {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.wizard-options h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.option-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.option-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 2px solid var(--border-soft);
+  border-radius: 0.75rem;
+  background: var(--surface-card);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.option-card:hover:not(:has(.option-radio:disabled)) {
+  border-color: var(--brand-orange);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.option-card.is-selected {
+  border-color: var(--brand-orange);
+  background: linear-gradient(135deg, rgba(255, 102, 51, 0.05), rgba(255, 102, 51, 0.02));
+  box-shadow: var(--shadow-md), 0 0 15px rgba(255, 102, 51, 0.08);
+}
+
+.option-card:has(.option-radio:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.option-radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.option-radio:checked + .option-content::before {
+  background: var(--brand-orange);
+  border-color: var(--brand-orange);
+  box-shadow: 0 0 0 3px rgba(255, 102, 51, 0.1);
+}
+
+.option-radio:checked + .option-content::after {
+  transform: scale(1);
+  background: white;
+}
+
+.option-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.option-content::before {
+  content: '';
+  position: absolute;
+  left: -2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border-medium);
+  border-radius: 50%;
+  background: var(--surface-card);
+  transition: all 0.2s ease;
+}
+
+.option-content::after {
+  content: '';
+  position: absolute;
+  left: -1.75rem;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.option-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.option-card.is-selected .option-icon {
+  background: var(--brand-orange);
+  color: white;
+  transform: scale(1.05);
+}
+
+.option-text {
+  flex: 1;
+}
+
+.option-text h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.option-text p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.option-disabled {
+  color: var(--text-tertiary) !important;
 }
 
 /* ===== Ambient Background ===== */
@@ -709,7 +1371,7 @@ const handleStep3 = async () => {
   left: -15%;
   width: 450px;
   height: 450px;
-  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+  background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-orange-deep) 100%);
   opacity: 0.04;
   animation-delay: -4s;
 }
@@ -781,7 +1443,7 @@ const handleStep3 = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px; /* 12 -> 8 */
+  gap: 12px;
 }
 
 /* 光圈容器：用于精确居中对齐 */
@@ -865,10 +1527,10 @@ const handleStep3 = async () => {
   background: var(--surface-card);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
-  padding: 32px 40px; /* 48 -> 32 */
+  padding: 48px;
   position: relative;
   overflow: hidden;
-  min-height: 480px; /* 520 -> 480 */
+  min-height: 520px;
   display: flex;
   flex-direction: column;
 }
@@ -914,7 +1576,7 @@ const handleStep3 = async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px; /* 32 -> 16 */
+  gap: 32px;
   position: relative;
   z-index: 1;
 }
@@ -952,16 +1614,19 @@ const handleStep3 = async () => {
 }
 
 .step-icon--blue {
-  background: linear-gradient(135deg, #60A5FA, var(--brand-blue-deep));
+  background: linear-gradient(135deg, var(--brand-orange-light), var(--brand-orange-deep));
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
 }
 
 .step-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
-  color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .step-title--success {
@@ -972,80 +1637,11 @@ const handleStep3 = async () => {
 }
 
 .step-subtitle {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-/* ===== Version Badge ===== */
-.version-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-  padding: 6px 14px;
-  background: linear-gradient(135deg, rgba(255, 102, 51, 0.08), rgba(255, 102, 51, 0.04));
-  border: 1px solid rgba(255, 102, 51, 0.15);
-  border-radius: 20px;
   font-size: 11px;
   font-weight: 700;
-}
-
-.version-label-premium {
   color: var(--brand-orange);
-  letter-spacing: 2.5px; /* 增加字间距，更有品牌感 */
-  font-weight: 900;
-  text-shadow: 0 0 15px rgba(255, 102, 51, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.version-label-premium::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: shine 3s infinite;
-}
-
-@keyframes shine {
-  0% { left: -100%; }
-  20% { left: 100%; }
-  100% { left: 100%; }
-}
-
-.version-divider {
-  color: var(--text-tertiary);
-}
-
-.version-number {
-  color: var(--text-tertiary);
-  font-family: 'SF Mono', 'Monaco', monospace;
-  letter-spacing: 0.5px;
-}
-
-.setup-card {
-  background: var(--surface-card);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-card);
-  padding: 32px 40px;
-  position: relative;
-  overflow-y: auto; /* 这里开启全局滚动 */
-  overflow-x: hidden;
-  max-height: 85vh; /* 设置卡片自己的最大高度 */
-  display: flex;
-  flex-direction: column;
-}
-
-/* 隐藏滚动条样式 */
-.setup-card::-webkit-scrollbar {
-  display: none;
-}
-.setup-card {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  text-transform: uppercase;
+  letter-spacing: 3px;
 }
 
 /* ===== Step Body ===== */
@@ -1053,51 +1649,14 @@ const handleStep3 = async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  position: relative;
-}
-
-/* Inline Footer for seamless flow */
-.step-footer-inline {
-  margin-top: 32px; /* 增加间距 */
-  padding-bottom: 32px; /* 增加底部留白 */
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-/* 按钮高度规范化 */
-.btn-primary, .btn-secondary {
-  height: 54px !important; /* 加强权重，确保一致性 */
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px;
-  font-weight: 700;
-  border-radius: var(--radius-md);
-}
-
-/* 按钮组规范化 - 针对第二步 */
-.btn-group {
-  display: grid !important;
-  grid-template-columns: 1fr 2fr !important;
-  gap: 16px !important;
-  width: 100% !important;
-  margin-top: 8px !important;
-  min-height: 54px !important; /* 🔥 强制锁定最小高度 */
-}
-
-.btn-group button {
-  height: 54px !important; /* 🔥 强制子元素高度 */
-  line-height: 54px !important;
-  padding: 0 !important;
+  gap: 24px;
 }
 
 /* ===== Form Styles ===== */
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* 16 -> 10 */
+  gap: 16px;
 }
 
 .form-section-label {
@@ -1228,7 +1787,7 @@ const handleStep3 = async () => {
 .form-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border-soft), transparent);
-  margin: 4px 0; /* 8 -> 4 */
+  margin: 8px 0;
 }
 
 /* ===== Cloud Toggle Card ===== */
@@ -1278,8 +1837,8 @@ const handleStep3 = async () => {
 }
 
 .toggle-input:checked + .toggle-track {
-  background: var(--brand-blue);
-  border-color: var(--brand-blue);
+  background: var(--brand-orange);
+  border-color: var(--brand-orange);
 }
 
 .toggle-thumb {
@@ -1327,7 +1886,7 @@ const handleStep3 = async () => {
 
 .badge--on {
   background: rgba(59, 130, 246, 0.15);
-  color: var(--brand-blue);
+  color: var(--brand-orange);
 }
 
 .badge--off {
@@ -1672,6 +2231,7 @@ const handleStep3 = async () => {
 
 .btn-group .btn-primary {
   flex: 1;
+  min-width: 200px;
 }
 
 .btn-spinner {
@@ -1699,7 +2259,7 @@ const handleStep3 = async () => {
 
 /* ===== Error Toast ===== */
 .error-toast {
-  position: absolute;
+  position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
@@ -1714,6 +2274,9 @@ const handleStep3 = async () => {
   font-weight: 600;
   color: #DC2626;
   box-shadow: 0 4px 16px rgba(220, 38, 38, 0.15);
+  z-index: 1000;
+  max-width: 90vw;
+  word-wrap: break-word;
 }
 
 .error-icon {
@@ -1939,35 +2502,8 @@ const handleStep3 = async () => {
     font-size: 13px;
   }
   
-  /* 移动端版本徽章 */
-  .version-badge {
-    margin-top: 8px;
-    padding: 4px 12px;
-    font-size: 10px;
-  }
-  
-  /* 关键：移动端step-body高度优化 */
   .step-body {
-    gap: 16px;
-    max-height: none; /* 移除桌面端的max-height限制 */
-    overflow-y: visible;
-    flex: 1;
-    min-height: 0; /* 允许flex收缩 */
-  }
-  
-  /* 让整个setup-card可滚动而不是step-body */
-  .setup-card {
-    max-height: calc(100dvh - 120px); /* 留出步进器空间 */
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .step-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+    gap: 20px;
   }
   
   .form-section {
@@ -2036,6 +2572,7 @@ const handleStep3 = async () => {
   .btn-group .btn-secondary,
   .btn-group .btn-primary {
     width: 100%;
+    flex: none;
   }
   
   /* Cloud Toggle */
@@ -2119,6 +2656,8 @@ const handleStep3 = async () => {
     padding: 12px 16px;
     font-size: 11px;
     border-radius: 12px;
+    bottom: 16px;
+    max-width: 95vw;
   }
   
   /* Debug Tools - hide on mobile */

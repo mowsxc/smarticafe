@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useSettingsStore } from '../stores/settings';
 import { toast } from '../composables/useToast';
+import { tauriCmd } from '../utils/tauri';
 
 // 页面组件
 import CashierView from '../views/CashierView.vue';
@@ -98,6 +99,29 @@ const router = createRouter({
   ],
 });
 
+// 检查初始化是否完成
+async function checkInitComplete(): Promise<boolean> {
+  try {
+    // 检查是否有活跃班次
+    const activeShift = await tauriCmd('shift_get_active');
+    if (!activeShift) {
+      return false;
+    }
+
+    // 检查是否有活跃员工
+    const employees = await tauriCmd('employees_list') as any[];
+    const activeEmployees = employees?.filter(emp => emp.is_active !== false) || [];
+    if (!activeEmployees || activeEmployees.length === 0) {
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    console.warn('Init complete check failed:', e);
+    return false;
+  }
+}
+
 // 运行版本与启动时间 (用于标题显示)
 const APP_VERSION = '2.0.0';
 const LAUNCH_TIME = new Date().toLocaleString('zh-CN', {
@@ -124,7 +148,7 @@ router.beforeEach(async (to, _from, next) => {
   // 这是最高优先级的检查
   try {
      const needsBootstrap = await authStore.bootstrapRequired();
-     
+
      if (needsBootstrap) {
          // 如果需要初始化，且当前不在 setup 页面，强制跳转
          if (to.name !== 'Setup') {
@@ -135,11 +159,21 @@ router.beforeEach(async (to, _from, next) => {
          next();
          return;
      } else {
-         // 不需要初始化
-         if (to.name === 'Setup') {
-             // 如果试图访问 setup 但不需要初始化，踢回首页
-             next({ path: '/' });
-             return;
+         // 检查初始化是否完成（需要有员工和活跃班次）
+         const initComplete = await checkInitComplete();
+         if (!initComplete) {
+             // 初始化未完成，强制回到setup页面
+             if (to.name !== 'Setup') {
+                 next({ name: 'Setup' });
+                 return;
+             }
+         } else {
+             // 初始化已完成
+             if (to.name === 'Setup') {
+                 // 如果试图访问 setup 但已完成初始化，踢回首页
+                 next({ path: '/' });
+                 return;
+             }
          }
      }
   } catch (e) {

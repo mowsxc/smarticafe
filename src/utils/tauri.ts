@@ -26,12 +26,13 @@ export async function tauriCmd<T>(cmd: string, args: Record<string, any> = {}): 
     }
   }
 
-  // Fallback to HTTP for browser/mobile mode
-  console.debug(`[HTTP] Remote Call: ${cmd}`, redact(args, SENSITIVE_KEYS));
-  
+  // Try to connect to Tauri HTTP API server (port 32521)
+  // This allows browser to access real database through Tauri app
+  console.debug(`[HTTP API] Remote Call: ${cmd}`, redact(args, SENSITIVE_KEYS));
+
   const apiHost = window.location.hostname;
-  const apiPort = 32520;
-  
+  const apiPort = 32521;
+
   // Map command names to specific API routes
   let url = `http://${apiHost}:${apiPort}/api/rpc/${cmd}`;
   let method = 'POST';

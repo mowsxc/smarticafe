@@ -156,6 +156,7 @@ pub async fn close_splash(app: AppHandle) -> Result<(), String> {
         splash.close().map_err(|e| e.to_string())?;
     }
     if let Some(main) = app.get_webview_window("main") {
+        main.center().map_err(|e| e.to_string())?;
         main.show().map_err(|e| e.to_string())?;
         main.set_focus().map_err(|e| e.to_string())?;
     }

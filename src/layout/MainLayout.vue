@@ -549,7 +549,7 @@ const handleNavClick = async (item: any) => {
 </script>
 
 <template>
-  <div class="h-screen w-screen flex flex-col bg-gray-50 text-gray-900 font-sans overflow-hidden selection:bg-brand-orange selection:text-white">
+  <div class="h-screen w-screen flex flex-col bg-gray-50 text-gray-900 font-sans overflow-y-auto scroll-smooth selection:bg-brand-orange selection:text-white">
     
     <!-- Auth Overlay Backdrop for unauthenticated users -->
     <div v-if="!authStore.isAuthenticated" class="fixed inset-0 z-50 bg-slate-100/60 backdrop-blur-xl flex flex-col items-center justify-center p-8 overflow-hidden">
@@ -863,8 +863,8 @@ const handleNavClick = async (item: any) => {
     </header>
 
     <!-- ===== MAIN CONTENT ===== -->
-    <main class="main-content flex-1 flex flex-col overflow-hidden p-4 pt-2">
-      <div class="content-wrapper flex-1 flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-100">
+    <main class="main-content flex-1 flex flex-col overflow-y-auto scroll-smooth p-4 pt-2 immersive-scroll">
+      <div class="content-wrapper flex-1 flex flex-col overflow-y-auto scroll-smooth rounded-2xl bg-white shadow-sm border border-gray-100 immersive-scroll">
         <router-view v-slot="{ Component }">
           <Transition name="page-fade" mode="out-in">
             <div :key="route.path" class="h-full">

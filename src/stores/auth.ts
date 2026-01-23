@@ -59,10 +59,18 @@ export const useAuthStore = defineStore('auth', () => {
 
   const bootstrapRequired = async () => {
     try {
-      return await tauriCmd<boolean>('auth_bootstrap_required');
-    } catch {
-      // 🛡️ 安全模式：如果接口调用失败，强制认为需要 bootstrap
-      return true; 
+      // Always try backend first - this is the source of truth
+      const backendResult = await tauriCmd<boolean>('auth_bootstrap_required');
+      console.log('Backend bootstrap check result:', backendResult);
+      return backendResult;
+    } catch (error) {
+      // Backend unavailable - this means we're in browser mode
+      console.warn('Backend unavailable, cannot determine bootstrap status:', error);
+      console.log('In browser mode: assuming bootstrap is required for development');
+
+      // In browser mode, we should always require bootstrap since there's no real database
+      // The localStorage checks were causing confusion - remove them
+      return true;
     }
   };
 
@@ -78,16 +86,30 @@ export const useAuthStore = defineStore('auth', () => {
       throw new Error('请输入完整信息');
     }
 
-    const session = await tauriCmd<TauriAuthSession>('auth_bootstrap_admin', payload as any);
+    let session: TauriAuthSession;
+
+    try {
+      // Always try backend first - this should be the only way to bootstrap
+      session = await tauriCmd<TauriAuthSession>('auth_bootstrap_admin', payload as any);
+      console.log('✅ Backend bootstrap successful - data saved to database');
+    } catch (error) {
+      // Backend unavailable - cannot actually bootstrap
+      console.error('❌ Bootstrap failed - backend unavailable:', error);
+      throw new Error('无法初始化系统：数据库服务不可用。请启动 Tauri 应用进行初始化。');
+    }
+
     const user: User = {
-      id: session?.account_id || `auth_${payload.pick_name}`,
+      id: session.account_id || `auth_${payload.pick_name}`,
       username: payload.pick_name,
       role: 'admin',
-      displayName: session?.name || payload.display_name,
-      token: session?.token,
+      displayName: session.name || payload.display_name,
+      token: session.token,
     };
     currentUser.value = user;
     saveToStorage(user);
+
+    console.log('✅ Admin account created and saved to database');
+    console.log('User:', user);
 
     try {
       const syncService = getSyncService();

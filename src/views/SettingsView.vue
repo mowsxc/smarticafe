@@ -7,7 +7,11 @@
           <h1 class="mt-2 text-2xl font-semibold text-slate-900">系统设置</h1>
           <p class="mt-2 text-sm text-slate-500">集中管理主题、LOGO、动画与业务运行参数</p>
         </div>
-        <ModernButton variant="primary" @click="saveSettings">保存设置</ModernButton>
+        <div class="flex gap-3">
+          <ModernButton variant="secondary" @click="resetCloudSettings">重置云设置</ModernButton>
+          <ModernButton variant="secondary" @click="showCloudStatus">云状态检查</ModernButton>
+          <ModernButton variant="primary" @click="saveSettings">保存设置</ModernButton>
+        </div>
       </header>
 
       <main class="mt-8 space-y-8">
@@ -310,6 +314,7 @@ import ModernButton from '../components/ui/ModernButton.vue';
 import { useThemeStore, themes } from '../stores/theme';
 import { useToast } from '../composables/useToast';
 import { useSettingsStore } from '../stores/settings';
+import { tauriCmd } from '../utils/tauri';
 
 // Theme store
 const themeStore = useThemeStore();
@@ -396,6 +401,34 @@ const systemTextStyle = computed<CSSProperties>(() => ({
   lineHeight: '1.2',
   letterSpacing: '0.08em',
 }));
+
+const resetCloudSettings = async () => {
+  if (confirm('确定要重置云设置吗？这将清除所有Supabase配置。')) {
+    try {
+      settingsStore.cloudSettings.enabled = false;
+      settingsStore.cloudSettings.supabaseUrl = '';
+      settingsStore.cloudSettings.supabaseAnonKey = '';
+      // 直接保存到数据库
+      await tauriCmd('kv_set', { key: 'settings.cloud', value: settingsStore.cloudSettings });
+      alert('云设置已重置，请重新配置Supabase信息并保存。');
+    } catch (error) {
+      console.error('Failed to reset cloud settings:', error);
+      alert('重置失败，请稍后重试。');
+    }
+  }
+};
+
+const showCloudStatus = () => {
+  const cloud = settingsStore.cloudSettings;
+
+  alert(`云设置状态检查:
+
+启用状态: ${cloud.enabled ? '✅ 已启用' : '❌ 未启用'}
+Supabase URL: ${cloud.supabaseUrl || '未设置'}
+API Key: ${cloud.supabaseAnonKey ? '已设置 (' + cloud.supabaseAnonKey.substring(0, 10) + '...)' : '未设置'}
+
+数据来源: 后端数据库 (不使用localStorage缓存)`);
+};
 
 const saveSettings = async () => {
   try {

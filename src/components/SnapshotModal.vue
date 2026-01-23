@@ -321,6 +321,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { tauriCmd } from '../utils/tauri'
 
 interface Props {
   isOpen: boolean
@@ -368,20 +369,24 @@ const watermarkSettings = ref({
 })
 
 // Load saved settings
-onMounted(() => {
-  const saved = localStorage.getItem('snapshotWatermarkSettings')
-  if (saved) {
-    try {
-      watermarkSettings.value = { ...watermarkSettings.value, ...JSON.parse(saved) }
-    } catch (e) {
-      console.warn('Failed to load watermark settings')
+onMounted(async () => {
+  try {
+    const saved = await tauriCmd('kv_get', { key: 'snapshotWatermarkSettings' })
+    if (saved && typeof saved === 'object') {
+      watermarkSettings.value = { ...watermarkSettings.value, ...saved }
     }
+  } catch (e) {
+    console.warn('Failed to load watermark settings from database')
   }
 })
 
 // Save settings on change
-watch(watermarkSettings, () => {
-  localStorage.setItem('snapshotWatermarkSettings', JSON.stringify(watermarkSettings.value))
+watch(watermarkSettings, async () => {
+  try {
+    await tauriCmd('kv_set', { key: 'snapshotWatermarkSettings', value: watermarkSettings.value })
+  } catch (error) {
+    console.error('Failed to save watermark settings:', error)
+  }
 }, { deep: true })
 
 // Settings

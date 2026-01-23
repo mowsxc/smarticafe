@@ -615,6 +615,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { fetchProducts, createProduct, updateProduct, deleteProduct, type Product } from '../api/products';
 import { useToast } from '../composables/useToast';
+import { tauriCmd } from '../utils/tauri';
 
 const { success, error, warning } = useToast();
 
@@ -711,36 +712,41 @@ const loadProducts = async () => {
 };
 
 // Sort Logic synced with CashierView
-const saveSortOrder = () => {
+const saveSortOrder = async () => {
     const ids = products.value.map(i => i.id);
-    localStorage.setItem('inventory_sort_order', JSON.stringify(ids));
-    // Dispatch event for other tabs/components?
-    window.dispatchEvent(new Event('storage')); 
+    try {
+        await tauriCmd('kv_set', { key: 'inventory_sort_order', value: ids });
+        console.log('商品排序已保存到数据库');
+    } catch (error) {
+        console.error('Failed to save sort order:', error);
+    }
 };
 
-const applySortOrder = () => {
-    const json = localStorage.getItem('inventory_sort_order');
-    if (!json) return;
+const applySortOrder = async () => {
     try {
-        const ids = JSON.parse(json) as string[];
+        const ids = await tauriCmd('kv_get', { key: 'inventory_sort_order' }) as string[];
+        if (!ids || !Array.isArray(ids)) return;
+
         const map = new Map(products.value.map(i => [i.id, i]));
         const sorted: Product[] = [];
         const seen = new Set<string>();
-        
+
         ids.forEach(id => {
             if (map.has(id)) {
                 sorted.push(map.get(id)!);
                 seen.add(id);
             }
         });
-        
+
         // Put remaining (new items) at the TOP
         const remaining: Product[] = [];
         products.value.forEach(item => {
              if(!seen.has(item.id)) remaining.push(item);
         });
         products.value = [...remaining, ...sorted];
-    } catch(e) {}
+    } catch(e) {
+        console.warn('Failed to apply sort order from database:', e);
+    }
 };
 
 const handleSort = () => {
@@ -766,9 +772,14 @@ const handleSort = () => {
 };
 
 const resetSort = async () => {
-    localStorage.removeItem('inventory_sort_order');
-    await loadProducts(); // Reload to get DB order
-    success('已恢复默认(老数据)排序');
+    try {
+        await tauriCmd('kv_delete', { key: 'inventory_sort_order' });
+        await loadProducts(); // Reload to get DB order
+        success('已恢复默认(老数据)排序');
+    } catch (error) {
+        console.error('Failed to reset sort order:', error);
+        await loadProducts(); // Still reload even if delete fails
+    }
 };
 
 const toggleSelect = (id: string) => {
@@ -930,9 +941,14 @@ const confirmBatchDelete = async () => {
   }
 };
 
-onMounted(() => {
-    if (localStorage.getItem('inventory_sort_order')) {
-        sortOption.value = 'custom';
+onMounted(async () => {
+    try {
+        const sortOrder = await tauriCmd('kv_get', { key: 'inventory_sort_order' });
+        if (sortOrder && Array.isArray(sortOrder)) {
+            sortOption.value = 'custom';
+        }
+    } catch (error) {
+        console.warn('Failed to check sort order from database:', error);
     }
     loadProducts();
 });

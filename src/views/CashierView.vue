@@ -67,6 +67,35 @@ const isReadonly = computed(() => !canEdit.value);
 // Admin only mode (for 售货清单 import/undo)
 const isAdmin = computed(() => auth.currentUser?.role === 'admin');
 
+// 实时同步检测 - 检查是否需要重新初始化
+let syncCheckInterval: NodeJS.Timeout | null = null;
+
+const startSyncCheck = () => {
+  syncCheckInterval = setInterval(async () => {
+    try {
+      const needsBootstrap = await auth.bootstrapRequired();
+      if (needsBootstrap) {
+        console.log('检测到系统需要重新初始化，跳转到设置页面...');
+        // 如果系统检测到需要重新初始化，跳转回去
+        window.location.href = '/#/setup';
+      }
+    } catch (error) {
+      // 忽略错误，继续检查
+    }
+  }, 3000); // 每3秒检查一次
+};
+
+onMounted(() => {
+  startSyncCheck();
+});
+
+onBeforeUnmount(() => {
+  if (syncCheckInterval) {
+    clearInterval(syncCheckInterval);
+    syncCheckInterval = null;
+  }
+});
+
 // 是否为当班人员（接班人）
 const isCurrentShiftHolder = computed(() => {
   const currentUser = auth.currentUser;
@@ -182,7 +211,7 @@ interface HandoverRow extends Product {
 }
 const handoverRows = ref<HandoverRow[]>([]);
 
-const openRedeemModal = (row: HandoverRow) => {
+const openRedeemModal = async (row: HandoverRow) => {
   if (!isCellEditable('redeem')) return;
   const prev = Number(row.redeem_discount) || 0;
   const input = prompt('设置乐享(每瓶)金额', String(prev));
@@ -191,9 +220,9 @@ const openRedeemModal = (row: HandoverRow) => {
   if (!Number.isFinite(val) || val < 0) return;
   row.redeem_discount = val;
   try {
-    localStorage.setItem('global_redeem_discount', String(val));
-  } catch {
-    // ignore
+    await tauriCmd('kv_set', { key: 'global_redeem_discount', value: val });
+  } catch (error) {
+    console.error('Failed to save global redeem discount:', error);
   }
   updateHandoverCalc();
 };
@@ -1838,11 +1867,11 @@ onBeforeUnmount(() => {
 
     <Transition name="fade" mode="out-in">
       <!-- Handover Mode (盘点模式) -->
-      <div v-if="mode === 'handover'" key="handover" ref="handoverContainer" class="flex-1 overflow-hidden flex flex-col gap-3">
+      <div v-if="mode === 'handover'" key="handover" ref="handoverContainer" class="flex-1 overflow-y-auto scroll-smooth immersive-scroll flex flex-col gap-3">
         <!-- Main Content Grid -->
         <div class="flex-1 overflow-hidden grid grid-cols-2 gap-3">
           <!-- Left: Inventory Table -->
-          <div class="glass-panel rounded-3xl shadow-xl flex flex-col overflow-hidden relative">
+          <div class="glass-panel rounded-3xl shadow-xl flex flex-col overflow-y-auto scroll-smooth immersive-scroll relative">
             <!-- Background decoration -->
             <div class="absolute top-0 right-0 w-80 h-80 bg-linear-to-br from-brand-orange/10 to-transparent rounded-bl-full pointer-events-none blur-3xl"></div>
             
@@ -2099,7 +2128,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Right: Content Column (Handover Summary, Accounting, Meituan) -->
-        <div class="flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-1">
+        <div class="flex flex-col gap-2 overflow-y-auto immersive-scroll pr-1">
           
            <!-- [Replica] Handover Module (交班计算核心) -->
            <div class="glass-panel rounded-2xl border border-black/5 shadow-2xl flex flex-col overflow-hidden shrink-0">
@@ -2337,7 +2366,7 @@ onBeforeUnmount(() => {
                 <span class="text-[14px] font-black text-brand-orange">¥{{ formatAuto(meituanStats.barTotal) }}</span>
               </div>
             </div>
-            <div ref="meituanTableContainerRef" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar px-1 pb-2">
+            <div ref="meituanTableContainerRef" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden immersive-scroll px-1 pb-2">
               <div
                 class="origin-top-left"
                 :style="{ transform: `scale(${meituanScale})`, width: meituanTargetWidth ? `${meituanTargetWidth}px` : 'auto' }"
@@ -2393,7 +2422,7 @@ onBeforeUnmount(() => {
     </div>
 
       <!-- Sales Mode (售卖模式) -->
-      <div v-else key="sales" class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden relative">
+      <div v-else key="sales" class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 overflow-y-auto scroll-smooth immersive-scroll relative">
         <div class="col-span-1 md:col-span-8 lg:col-span-9 flex flex-col gap-3 overflow-hidden">
           <div class="flex-1 overflow-auto pr-1 custom-scrollbar">
             <div v-if="loading" class="flex flex-col items-center justify-center h-full text-gray-300 gap-4">
@@ -2543,7 +2572,7 @@ onBeforeUnmount(() => {
               </div>
               <button @click="showPackageModal = false" class="w-12 h-12 rounded-full hover:bg-black/5 flex items-center justify-center text-gray-400 transition-all active:scale-90">✕</button>
             </div>
-            <div class="p-10 overflow-y-auto custom-scrollbar bg-white/40 backdrop-blur-sm">
+            <div class="p-10 overflow-y-auto immersive-scroll bg-white/40 backdrop-blur-sm">
               <div class="bg-orange-50/50 border border-orange-100 rounded-2xl p-6 mb-8 flex items-start gap-4">
                 <div class="text-2xl mt-1">💡</div>
                 <div class="text-xs text-orange-800/80 leading-relaxed font-medium">
@@ -2663,7 +2692,7 @@ onBeforeUnmount(() => {
           </div>
           
           <!-- Cart Items -->
-          <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
+          <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 immersive-scroll">
                <CartItem v-for="item in cart.items" :key="item.id" :item="item" @add="cart.addToCart" @remove="cart.removeFromCart" />
                <div v-if="cart.items.length === 0" class="flex-1 flex flex-col items-center justify-center opacity-40">
                   <span class="text-4xl mb-4">🛒</span>

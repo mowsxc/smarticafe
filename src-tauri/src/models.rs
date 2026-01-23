@@ -87,6 +87,11 @@ pub struct AuthAccountSetActiveInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BusinessSettingsInput {
+    pub equity_enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemLog {
     pub id: i64,
     pub timestamp: String,

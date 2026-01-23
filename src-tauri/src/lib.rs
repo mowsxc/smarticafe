@@ -16,12 +16,6 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            // 🔥 【暴力重置】确保由于之前的逻辑残留导致的 setup_completed 被删除
-            if let Ok(conn) = crate::db::open_db(app.handle()) {
-                let _ = conn.execute("DELETE FROM kv WHERE k = 'setup_completed'", []);
-                let _ = conn.execute("DELETE FROM kv WHERE k = 'setup_step'", []);
-            }
-
             // 🔒 强制隐藏主窗口（防止"双层叠加"）
             use tauri::Manager;
             if let Some(main_window) = app.get_webview_window("main") {
@@ -73,12 +67,6 @@ pub fn run() {
             auth_employee_login,
             auth_bootstrap_required,
             auth_bootstrap_admin,
-            auth_complete_setup,
-            auth_save_setup_step,
-            auth_get_setup_step,
-            auth_save_setup_data,
-            auth_get_setup_data,
-            auth_dbg_fully_reset_accounts,
             debug_seed_full_data,
             auth_pick_list,
             auth_accounts_list,
@@ -94,6 +82,8 @@ pub fn run() {
             auth_get_brand_settings,
             auth_update_brand_settings,
             auth_account_update_profile,
+            settings_save_business,
+            settings_save_cloud,
 
             // Product Commands
             products_list,

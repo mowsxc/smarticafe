@@ -1,15 +1,16 @@
 <template>
   <Transition name="fade">
-    <div 
-      v-if="isOpen" 
+    <div
+      v-if="isOpen"
       class="login-overlay fixed inset-0 z-[100] flex items-center justify-center p-4"
       @click.self="emit('close')"
     >
       <!-- Glassmorphism Card -->
       <Transition name="scale" appear>
-        <div 
+        <div
           v-if="isOpen"
-          class="login-card w-full max-w-[460px] relative overflow-hidden"
+          class="login-card w-full max-w-[460px] relative overflow-hidden flex flex-col"
+          :class="{ 'max-h-[90vh]': isMobile, 'overflow-y-auto': isMobile }"
           @click.stop
         >
           <!-- Card Effects -->
@@ -144,6 +145,14 @@
               </div>
             </div>
           </Transition>
+
+          <!-- ===== Footer: System Info ===== -->
+          <div class="card-footer-system">
+            <div class="system-info">
+              <span class="system-name">{{ settingsStore.brandSettings.systemName }} v2.0.0</span>
+              <span class="system-version">SmartCafe System</span>
+            </div>
+          </div>
         </div>
       </Transition>
     </div>
@@ -178,6 +187,26 @@ const password = ref('');
 const errorMessage = ref('');
 const isPasswordFocused = ref(false);
 const loading = ref(false);
+
+// 移动端检测
+const isMobile = ref(false);
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768 || window.innerHeight <= 600;
+};
+
+// 监听窗口大小变化
+const handleResize = () => checkMobile();
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    checkMobile();
+    window.addEventListener('resize', handleResize);
+  } else {
+    window.removeEventListener('resize', handleResize);
+  }
+});
+
+// ... 其余代码保持不变
 
 watch(() => props.isOpen, (newVal) => {
   if (!newVal) return;
@@ -395,6 +424,7 @@ const handleLogin = async () => {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  min-height: 0; /* 允许内容压缩 */
 }
 
 /* ===== Login Section ===== */
@@ -831,6 +861,36 @@ const handleLogin = async () => {
   font-weight: 800;
 }
 
+/* ===== System Info Footer ===== */
+.card-footer-system {
+  position: relative;
+  z-index: 2;
+  padding: 12px 40px;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.02), rgba(16, 185, 129, 0.04));
+  border-top: 1px solid rgba(16, 185, 129, 0.08);
+}
+
+.system-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.system-name {
+  color: var(--brand-orange);
+  font-weight: 800;
+}
+
+.system-version {
+  color: var(--gray-400);
+}
+
 /* ===== Vue Transitions ===== */
 .fade-enter-active,
 .fade-leave-active {
@@ -883,22 +943,32 @@ const handleLogin = async () => {
   .login-card {
     margin: 16px;
     border-radius: 24px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
   }
-  
+
   .card-header {
     padding: 32px 24px 20px;
+    flex-shrink: 0; /* 防止header被压缩 */
   }
-  
+
   .card-body {
     padding: 0 24px 32px;
+    flex: 1; /* 允许body扩展 */
+    min-height: 0; /* 允许内部滚动 */
   }
-  
+
   .employee-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .shareholder-grid {
     grid-template-columns: 1fr;
+  }
+
+  .card-footer,
+  .card-footer-system {
+    flex-shrink: 0; /* 防止footer被压缩 */
   }
 }
 </style>

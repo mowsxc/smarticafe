@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { tauriCmd } from '../utils/tauri';
 
 // Theme configuration
 export interface ThemeConfig {
@@ -109,9 +110,21 @@ export const themes: ThemeConfig[] = [
 ];
 
 export const useThemeStore = defineStore('theme', () => {
-  // Load saved theme
-  const savedThemeId = localStorage.getItem('app_theme');
-  const currentThemeId = ref(savedThemeId || 'orange');
+  // Load saved theme from database
+  const currentThemeId = ref('orange');
+
+  // Load theme from database on init
+  const loadThemeFromDB = async () => {
+    try {
+      const savedThemeId = await tauriCmd('kv_get', { key: 'app_theme' });
+      if (savedThemeId && typeof savedThemeId === 'string') {
+        currentThemeId.value = savedThemeId;
+      }
+    } catch (error) {
+      console.warn('Failed to load theme from database:', error);
+      // Fallback to default theme
+    }
+  };
   
   const currentTheme = computed(() => {
     return themes.find(t => t.id === currentThemeId.value) || themes[0];
@@ -121,7 +134,7 @@ export const useThemeStore = defineStore('theme', () => {
   const applyTheme = () => {
     const theme = currentTheme.value;
     const root = document.documentElement;
-    
+
     // Set CSS variables
     root.style.setProperty('--color-primary', theme.colors.primary);
     root.style.setProperty('--color-primary-hover', theme.colors.primaryHover);
@@ -134,10 +147,16 @@ export const useThemeStore = defineStore('theme', () => {
     root.style.setProperty('--color-success', theme.colors.success);
     root.style.setProperty('--color-warning', theme.colors.warning);
     root.style.setProperty('--color-error', theme.colors.error);
-    
-    // Save to localStorage
-    localStorage.setItem('app_theme', currentThemeId.value);
-    
+
+    // Save to database
+    ;(async () => {
+      try {
+        await tauriCmd('kv_set', { key: 'app_theme', value: currentThemeId.value });
+      } catch (error) {
+        console.error('Failed to save theme to database:', error);
+      }
+    })();
+
     // Update body class for dark mode
     if (currentThemeId.value === 'dark') {
       document.body.classList.add('dark-mode');
@@ -156,7 +175,13 @@ export const useThemeStore = defineStore('theme', () => {
   };
 
   // Initialize theme on load
-  applyTheme();
+  const init = async () => {
+    await loadThemeFromDB();
+    applyTheme();
+  };
+
+  // Auto-initialize
+  init();
 
   return {
     themes,
@@ -164,5 +189,6 @@ export const useThemeStore = defineStore('theme', () => {
     currentTheme,
     setTheme,
     applyTheme,
+    init,
   };
 });
