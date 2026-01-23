@@ -16,6 +16,12 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            // 🔥 【暴力重置】确保由于之前的逻辑残留导致的 setup_completed 被删除
+            if let Ok(conn) = crate::db::open_db(app.handle()) {
+                let _ = conn.execute("DELETE FROM kv WHERE k = 'setup_completed'", []);
+                let _ = conn.execute("DELETE FROM kv WHERE k = 'setup_step'", []);
+            }
+
             // 🔒 强制隐藏主窗口（防止"双层叠加"）
             use tauri::Manager;
             if let Some(main_window) = app.get_webview_window("main") {

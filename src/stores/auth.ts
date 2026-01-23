@@ -61,7 +61,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       return await tauriCmd<boolean>('auth_bootstrap_required');
     } catch {
-      return false;
+      // 🛡️ 安全模式：如果接口调用失败，强制认为需要 bootstrap
+      return true; 
     }
   };
 
