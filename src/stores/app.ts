@@ -6,7 +6,16 @@ import type { ShiftState } from '../api/types';
 export const useAppStore = defineStore('app', () => {
   // Load from storage or default
   const storedApp = localStorage.getItem('app_state');
-  const state = storedApp ? JSON.parse(storedApp) : null;
+  let state = storedApp ? JSON.parse(storedApp) : null;
+
+  if (
+    state &&
+    typeof state === 'object' &&
+    (state.currentDate === '2026-01-01' || state.currentEmployee === '黄河')
+  ) {
+    localStorage.removeItem('app_state');
+    state = null;
+  }
 
   const todayYmd = () => {
     const d = new Date();
