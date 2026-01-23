@@ -8,9 +8,15 @@ export const useAppStore = defineStore('app', () => {
   const storedApp = localStorage.getItem('app_state');
   const state = storedApp ? JSON.parse(storedApp) : null;
 
-  const currentDate = ref(state?.currentDate || '2026-01-01');
+  const todayYmd = () => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  const currentDate = ref(state?.currentDate || todayYmd());
   const currentShift = ref(state?.currentShift || '白班');
-  const currentEmployee = ref(state?.currentEmployee || '黄河');
+  const currentEmployee = ref(state?.currentEmployee || '');
   
   const systemStatus = ref('online');
 

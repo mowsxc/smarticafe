@@ -133,10 +133,12 @@ onMounted(() => {
 // ===== Shift Info Editing =====
 const showShiftEditModal = ref(false);
 const editingShift = ref({
-  date: appStore.currentDate,
-  shift: appStore.currentShift,
-  employee: appStore.currentEmployee,
+  date: String(appStore.currentDate || ''),
+  shift: String(appStore.currentShift || ''),
+  employee: String(appStore.currentEmployee || ''),
 });
+
+const shiftPeople = ref<string[]>([]);
 
 // Check if current user can edit shift info
 const canEditShift = computed(() => {
@@ -148,10 +150,20 @@ const canEditShift = computed(() => {
 const openShiftEdit = () => {
   if (!canEditShift.value) return;
   editingShift.value = {
-    date: appStore.currentDate,
-    shift: appStore.currentShift,
-    employee: appStore.currentEmployee,
+    date: String(appStore.currentDate || ''),
+    shift: String(appStore.currentShift || ''),
+    employee: String(appStore.currentEmployee || ''),
   };
+  ;(async () => {
+    try {
+      const list = await authStore.fetchPickList();
+      const employees = Array.isArray(list?.employees) ? list.employees : [];
+      const bosses = Array.isArray(list?.bosses) ? list.bosses : [];
+      shiftPeople.value = [...employees, ...bosses];
+    } catch {
+      shiftPeople.value = [];
+    }
+  })();
   showShiftEditModal.value = true;
 };
 
@@ -947,10 +959,7 @@ const handleNavClick = async (item: any) => {
                 v-model="editingShift.employee"
                 class="w-full h-11 px-4 rounded-xl border border-gray-200 focus:border-brand-orange/40 focus:ring-4 focus:ring-orange-500/10 outline-none font-mono text-sm"
               >
-                <option value="管理员">管理员</option>
-                <option value="股东A">股东A</option>
-                <option value="员工A">员工A</option>
-                <option value="员工B">员工B</option>
+                <option v-for="p in shiftPeople" :key="p" :value="p">{{ p }}</option>
               </select>
             </div>
           </div>
