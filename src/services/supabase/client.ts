@@ -261,13 +261,15 @@ const localEnabled = localCloud?.enabled
 const envSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const envSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
-const supabaseUrl = localEnabled === false
-  ? ''
-  : (String(localCloud?.supabaseUrl || '').trim() || envSupabaseUrl)
+const cloudEnabled = localEnabled === true
 
-const supabaseAnonKey = localEnabled === false
-  ? ''
-  : (String(localCloud?.supabaseAnonKey || '').trim() || envSupabaseAnonKey)
+const supabaseUrl = cloudEnabled
+  ? (String(localCloud?.supabaseUrl || '').trim() || envSupabaseUrl)
+  : ''
+
+const supabaseAnonKey = cloudEnabled
+  ? (String(localCloud?.supabaseAnonKey || '').trim() || envSupabaseAnonKey)
+  : ''
 
 // 核心 Supabase 客户端 (使用 anon key)
 // 注意：在浏览器环境严禁使用 Service Role Key，否则会被 Supabase 拦截并报错 401
