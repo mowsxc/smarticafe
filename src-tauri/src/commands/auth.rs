@@ -36,44 +36,32 @@ pub fn auth_login(app: AppHandle, input: AuthLoginInput) -> Result<AuthSession, 
         ));
     }
 
+    // 1. Try Direct Login
     let mut stmt = conn
         .prepare(
-            "SELECT pass_salt, pass_hash, role, identity, display_name, equity
+            "SELECT pass_salt, pass_hash, role, identity, display_name, equity, id
              FROM auth_accounts
              WHERE pick_name = ?1 AND is_active = 1",
         )
         .map_err(|e| format!("prepare auth_login: {e}"))?;
 
     let mut rows = stmt
-        .query([pick_name_q])
+        .query([&pick_name_q])
         .map_err(|e| format!("query auth_login: {e}"))?;
 
-    let mut matched_any = false;
-
     while let Some(row) = rows.next().map_err(|e| format!("next auth_login: {e}"))? {
-        matched_any = true;
         let salt: String = row.get(0).map_err(|e| format!("get salt: {e}"))?;
         let hash_db: String = row.get(1).map_err(|e| format!("get hash: {e}"))?;
-        let hash_in = pass_hash(&salt, &password);
-        if hash_in == hash_db {
+        
+        if pass_hash(&salt, &password) == hash_db {
+            // Direct login success
             let role: String = row.get(2).map_err(|e| format!("get role: {e}"))?;
             let identity: String = row.get(3).map_err(|e| format!("get identity: {e}"))?;
             let name: String = row.get(4).map_err(|e| format!("get name: {e}"))?;
             let equity: f64 = row.get(5).map_err(|e| format!("get equity: {e}"))?;
+            let account_id: String = row.get(6).map_err(|e| format!("get id: {e}"))?;
 
             let token = Uuid::new_v4().to_string();
-            
-            // resolve account_id for this matched row
-            let account_id: Option<String> = conn
-                .query_row(
-                    "SELECT id FROM auth_accounts WHERE pick_name = ?1 AND pass_salt = ?2 AND pass_hash = ?3 LIMIT 1",
-                    params![pick_name, salt, hash_db],
-                    |r| r.get(0),
-                )
-                .optional()
-                .map_err(|e| format!("query account_id: {e}"))?;
-            let account_id = account_id.unwrap_or_default();
-
             let mut map = auth_sessions().lock().map_err(|_| String::from("lock"))?;
             map.insert(token.clone(), account_id.clone());
 
@@ -88,9 +76,6 @@ pub fn auth_login(app: AppHandle, input: AuthLoginInput) -> Result<AuthSession, 
         }
     }
 
-    if !matched_any {
-        return Err(format!("no_account:{pick_name}"));
-    }
     Err(String::from("bad_password"))
 }
 

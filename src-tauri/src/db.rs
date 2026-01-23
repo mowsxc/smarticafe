@@ -42,6 +42,10 @@ fn init_db(conn: &Connection) -> Result<(), String> {
            identity TEXT NOT NULL,\
            display_name TEXT NOT NULL,\
            equity REAL NOT NULL DEFAULT 0,\
+           proxy_host TEXT,\
+           is_hidden INTEGER DEFAULT 0,\
+           salary_base REAL DEFAULT 0,\
+           profile TEXT,\
            is_active INTEGER NOT NULL DEFAULT 1,\
            created_at INTEGER NOT NULL,\
            updated_at INTEGER NOT NULL\
@@ -168,6 +172,11 @@ fn init_db(conn: &Connection) -> Result<(), String> {
     // Schema upgrades
     let _ = conn.execute_batch("ALTER TABLE shift_records ADD COLUMN income REAL NOT NULL DEFAULT 0;");
     let _ = conn.execute_batch(&format!("ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT '{}';", DEFAULT_CATEGORY));
+    // New Auth Columns
+    let _ = conn.execute_batch("ALTER TABLE auth_accounts ADD COLUMN proxy_host TEXT;");
+    let _ = conn.execute_batch("ALTER TABLE auth_accounts ADD COLUMN is_hidden INTEGER DEFAULT 0;");
+    let _ = conn.execute_batch("ALTER TABLE auth_accounts ADD COLUMN salary_base REAL DEFAULT 0;");
+    let _ = conn.execute_batch("ALTER TABLE auth_accounts ADD COLUMN profile TEXT;");
     
     Ok(())
 }

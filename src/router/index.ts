@@ -13,63 +13,83 @@ import PermissionsView from '../views/PermissionsView.vue';
 import SettingsView from '../views/SettingsView.vue';
 
 const routes: RouteRecordRaw[] = [
+  // 业务主应用（使用 MainLayout）
   {
     path: '/',
+    component: () => import('../layout/MainLayout.vue'),
     redirect: '/cashier',
+    children: [
+      {
+        path: 'cashier',
+        name: 'Cashier',
+        component: CashierView,
+        meta: { requiresAuth: true, title: '收银台', icon: '💰', permission: 'view_cashier' },
+      },
+      {
+        path: 'external',
+        name: 'ExternalPage',
+        component: () => import('../views/ExternalPage.vue'),
+        meta: { requiresAuth: true, title: '外部页面', icon: '🌍' },
+      },
+      {
+        path: 'shift-records',
+        name: 'ShiftRecords',
+        component: ShiftRecordsView,
+        meta: { requiresAuth: true, title: '交班记录', icon: '📋', permission: 'view_shift' },
+      },
+      {
+        path: 'products',
+        name: 'Products',
+        component: ProductsView,
+        meta: { requiresAuth: true, title: '商品管理', icon: '📦', adminOnly: true, permission: 'view_products' },
+      },
+      {
+        path: 'finance',
+        name: 'Finance',
+        component: FinanceView,
+        meta: { requiresAuth: true, title: '财务管理', icon: '💼', bossOnly: true, permission: 'view_finance' },
+      },
+      {
+        path: 'users',
+        name: 'Users',
+        component: UsersView,
+        meta: { requiresAuth: true, title: '用户管理', icon: '👥', adminOnly: true, permission: 'view_users' },
+      },
+      {
+        path: 'permissions',
+        name: 'Permissions',
+        component: PermissionsView,
+        meta: { requiresAuth: true, title: '权限管理', icon: '🔐', adminOnly: true, permission: 'view_permissions' },
+      },
+      {
+        path: 'settings',
+        name: 'Settings',
+        component: SettingsView,
+        meta: { requiresAuth: true, title: '系统设置', icon: '⚙️', adminOnly: true, permission: 'view_settings' },
+      },
+    ]
   },
+  
+  // 独立页面（如初始化引导，不使用 MainLayout）
   {
-    path: '/external',
-    name: 'ExternalPage',
-    component: () => import('../views/ExternalPage.vue'),
-    meta: { requiresAuth: true, title: '外部页面', icon: '🌍' },
-  },
-  {
-    path: '/cashier',
-    name: 'Cashier',
-    component: CashierView,
-    meta: { requiresAuth: true, title: '收银台', icon: '💰', permission: 'view_cashier' },
-  },
-  {
-    path: '/shift-records',
-    name: 'ShiftRecords',
-    component: ShiftRecordsView,
-    meta: { requiresAuth: true, title: '交班记录', icon: '📋', permission: 'view_shift' },
-  },
-  {
-    path: '/products',
-    name: 'Products',
-    component: ProductsView,
-    meta: { requiresAuth: true, title: '商品管理', icon: '📦', adminOnly: true, permission: 'view_products' },
-  },
-  {
-    path: '/finance',
-    name: 'Finance',
-    component: FinanceView,
-    meta: { requiresAuth: true, title: '财务管理', icon: '💼', bossOnly: true, permission: 'view_finance' },
-  },
-  {
-    path: '/users',
-    name: 'Users',
-    component: UsersView,
-    meta: { requiresAuth: true, title: '用户管理', icon: '👥', adminOnly: true, permission: 'view_users' },
-  },
-  {
-    path: '/permissions',
-    name: 'Permissions',
-    component: PermissionsView,
-    meta: { requiresAuth: true, title: '权限管理', icon: '🔐', adminOnly: true, permission: 'view_permissions' },
-  },
-  {
-    path: '/settings',
-    name: 'Settings',
-    component: SettingsView,
-    meta: { requiresAuth: true, title: '系统设置', icon: '⚙️', adminOnly: true, permission: 'view_settings' },
-  },
+    path: '/setup',
+    name: 'Setup',
+    component: () => import('../views/SetupView.vue'),
+    meta: { requiresAuth: false, title: '系统初始化' }
+  }
 ];
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes,
+  routes: [
+    ...routes,
+    {
+      path: '/setup',
+      name: 'Setup',
+      component: () => import('../views/SetupView.vue'),
+      meta: { requiresAuth: false, title: '系统初始化' }
+    }
+  ],
 });
 
 // 运行版本与启动时间 (用于标题显示)
@@ -84,24 +104,41 @@ const LAUNCH_TIME = new Date().toLocaleString('zh-CN', {
 }).replace(/\//g, '-');
 
 // 路由守卫
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
   const settingsStore = useSettingsStore();
 
-  // 1. 优先检查系统是否已初始化
-  authStore.bootstrapRequired().then(required => {
-    if (required) {
-      // 如果需要初始化，且当前不是处于登录弹窗触发状态，则强制开启登录弹窗
-      if (!authStore.isLoginRequired) {
-          authStore.isLoginRequired = true;
-      }
-    }
-  });
-  
   // 更新页面标题
   if (to.meta.title) {
     const brand = settingsStore.brandSettings?.brandName || 'Smarticafe';
     document.title = `${to.meta.title} - ${brand} - Smarticafe v${APP_VERSION} (${LAUNCH_TIME})`;
+  }
+
+  // 1. 系统初始化检查 (Bootstrap Check)
+  // 这是最高优先级的检查
+  try {
+     const needsBootstrap = await authStore.bootstrapRequired();
+     
+     if (needsBootstrap) {
+         // 如果需要初始化，且当前不在 setup 页面，强制跳转
+         if (to.name !== 'Setup') {
+             next({ name: 'Setup' });
+             return;
+         }
+         // 如果已经在 setup 页面，放行
+         next();
+         return;
+     } else {
+         // 不需要初始化
+         if (to.name === 'Setup') {
+             // 如果试图访问 setup 但不需要初始化，踢回首页
+             next({ path: '/' });
+             return;
+         }
+     }
+  } catch (e) {
+      console.warn('Bootstrap check failed, maybe offline or api error', e);
+      // Fallback: continue normal flow
   }
 
   // 如果页面不需要认证，直接放行
@@ -113,8 +150,11 @@ router.beforeEach((to, _from, next) => {
   // 检查是否已登录
   if (!authStore.isAuthenticated) {
     authStore.pendingRedirect = to.fullPath;
-    authStore.isLoginRequired = true;
-    next(false);
+    authStore.isLoginRequired = true; // 保留此标志位用于触发 Header bar 的登录弹窗
+    // 这里我们不再阻断路由，而是让用户留在当前页面（可能是 MainLayout），
+    // 此时 MainLayout 会显示全屏的 "请先登录" 遮罩层 (我们在 MainLayout里见过的那个 div v-if="!authStore.isAuthenticated")
+    // 所以 next() 放行即可，让 MainLayout 接管。
+    next(); 
     return;
   }
 

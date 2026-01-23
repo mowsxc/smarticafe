@@ -322,6 +322,17 @@ async fn api_rpc_handler(
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
+        "auth_bootstrap_admin" => {
+            let input: crate::models::AuthBootstrapAdminInput = match serde_json::from_value(_args) {
+                Ok(v) => v,
+                Err(e) => return Err(ApiResponse::<Value>::err(format!("invalid_args: {}", e))),
+            };
+            
+            match crate::commands::auth::auth_bootstrap_admin(state.app.clone(), input) {
+                Ok(session) => Ok(ApiResponse::ok(serde_json::to_value(session).unwrap())),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
         "auth_get_brand_settings" => {
             match crate::commands::auth::auth_get_brand_settings(state.app.clone()) {
                 Ok(v) => Ok(ApiResponse::ok(serde_json::to_value(v).unwrap())),
