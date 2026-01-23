@@ -1594,8 +1594,9 @@ const handleStep3 = async () => {
 /* Mobile Large (480px - 768px) */
 @media (max-width: 768px) {
   .setup-view {
-    padding: 16px;
+    padding: 12px;
     min-height: 100dvh;
+    overflow-y: auto; /* 确保可滚动 */
   }
   
   .setup-container {
@@ -1603,145 +1604,159 @@ const handleStep3 = async () => {
   }
   
   .setup-card {
-    padding: 28px;
-    border-radius: 20px;
+    padding: 20px 16px; /* 减少padding */
+    border-radius: 16px;
     min-height: auto;
+    max-height: calc(100dvh - 100px); /* 限制最大高度 */
+    overflow-y: auto; /* 内容可滚动 */
   }
   
   .stepper {
-    margin-bottom: 24px;
+    margin-bottom: 16px; /* 减少间距 */
     padding: 0;
   }
   
   .stepper-track {
-    top: 16px;
-    left: 40px;
-    right: 40px;
+    top: 14px;
+    left: 36px;
+    right: 36px;
     height: 2px;
   }
   
   .stepper-node-wrapper {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
   
   .stepper-node-dot {
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
     border-width: 1.5px;
   }
   
   .stepper-check {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
   }
   
   .stepper-label {
-    font-size: 9px;
-    letter-spacing: 0.3px;
-    max-width: 60px;
+    font-size: 8px;
+    letter-spacing: 0.2px;
+    max-width: 56px;
     text-align: center;
-    line-height: 1.3;
+    line-height: 1.2;
   }
   
   .stepper-node {
-    gap: 8px;
+    gap: 6px;
   }
   
   .step-header {
     text-align: center;
+    margin-bottom: 12px; /* 减少间距 */
   }
   
   .step-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    margin-bottom: 8px;
   }
   
   .step-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .step-title {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  
+  .step-subtitle {
+    font-size: 12px;
+  }
+  
+  .step-body {
+    gap: 12px; /* 减少间距 */
+  }
+  
+  .step-content {
+    gap: 16px; /* 减少间距 */
+  }
+  
+  .form-section {
+    gap: 8px; /* 减少间距 */
+  }
+  
+  .form-section-label {
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 10px;
+  }
+  
+  .label-icon-wrap {
     width: 24px;
     height: 24px;
   }
   
-  .step-title {
-    font-size: 20px;
-  }
-  
-  .step-subtitle {
-    font-size: 13px;
-  }
-  
-  .step-body {
-    gap: 20px;
-  }
-  
-  .form-section {
-    gap: 12px;
-  }
-  
-  .form-section-label {
-    gap: 10px;
-    padding: 6px 0;
-    font-size: 11px;
-  }
-  
-  .label-icon-wrap {
-    width: 28px;
-    height: 28px;
-  }
-  
   .label-icon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
   
+  /* 保持双列布局！宽度足够 */
   .form-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr 1fr; /* 恢复双列 */
+    gap: 8px; /* 减少间隙 */
   }
   
   .form-field {
-    gap: 4px;
+    gap: 2px;
   }
   
   .field-label {
-    font-size: 10px;
+    font-size: 9px;
+    margin-left: 2px;
   }
   
   .field-input {
-    height: 44px;
-    font-size: 14px;
-    padding: 0 14px;
-    border-radius: 10px;
+    height: 40px; /* 减少高度 */
+    font-size: 13px;
+    padding: 0 12px;
+    border-radius: 8px;
   }
   
   .form-divider {
-    margin: 4px 0;
+    margin: 2px 0;
   }
   
   .btn-primary {
-    height: 52px;
-    padding: 0 24px;
-    font-size: 14px;
-    border-radius: 14px;
+    height: 46px; /* 减少高度 */
+    padding: 0 20px;
+    font-size: 13px;
+    border-radius: 12px;
   }
   
   .btn-secondary {
-    height: 52px;
-    padding: 0 24px;
-    font-size: 14px;
-    border-radius: 14px;
+    height: 46px;
+    padding: 0 20px;
+    font-size: 13px;
+    border-radius: 12px;
   }
   
   .btn-group {
-    flex-direction: column-reverse;
-    gap: 10px;
+    flex-direction: row; /* 保持横向 */
+    gap: 8px;
   }
   
-  .btn-group .btn-secondary,
+  .btn-group .btn-secondary {
+    flex: 0 0 auto;
+  }
+  
   .btn-group .btn-primary {
-    width: 100%;
+    flex: 1;
   }
   
   /* Cloud Toggle */
@@ -1867,36 +1882,133 @@ const handleStep3 = async () => {
 /* Mobile Small (< 480px) */
 @media (max-width: 480px) {
   .setup-view {
-    padding: 12px;
+    padding: 8px;
   }
   
   .setup-card {
-    padding: 24px 20px;
-    border-radius: 16px;
+    padding: 16px 14px;
+    border-radius: 14px;
+    max-height: calc(100dvh - 80px);
+  }
+  
+  .stepper {
+    margin-bottom: 12px;
   }
   
   .stepper-track {
-    left: 32px;
-    right: 32px;
+    left: 28px;
+    right: 28px;
+    top: 12px;
+  }
+  
+  .stepper-node-wrapper {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .stepper-node-dot {
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
   }
   
   .stepper-label {
-    font-size: 8px;
-    max-width: 50px;
+    font-size: 7px;
+    max-width: 48px;
+  }
+  
+  .stepper-node {
+    gap: 4px;
+  }
+  
+  .step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+  }
+  
+  .step-icon svg {
+    width: 18px;
+    height: 18px;
   }
   
   .step-title {
-    font-size: 18px;
+    font-size: 16px;
+    margin-bottom: 2px;
   }
   
   .step-subtitle {
+    font-size: 11px;
+  }
+  
+  .step-header {
+    margin-bottom: 8px;
+  }
+  
+  .step-body {
+    gap: 10px;
+  }
+  
+  .step-content {
+    gap: 12px;
+  }
+  
+  .form-section {
+    gap: 6px;
+  }
+  
+  .form-section-label {
+    padding: 2px 0;
+    font-size: 9px;
+  }
+  
+  .label-icon-wrap {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .label-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
+  /* 480px仍保持双列 */
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  
+  .form-field {
+    gap: 1px;
+  }
+  
+  .field-label {
+    font-size: 8px;
+    margin-left: 1px;
+  }
+  
+  .field-input {
+    height: 36px;
     font-size: 12px;
+    padding: 0 10px;
+    border-radius: 6px;
+  }
+  
+  .form-divider {
+    margin: 1px 0;
   }
   
   .btn-primary,
   .btn-secondary {
-    height: 48px;
-    font-size: 13px;
+    height: 42px;
+    font-size: 12px;
+    border-radius: 10px;
+    padding: 0 16px;
+  }
+  
+  .btn-group {
+    gap: 6px;
   }
 }
 
