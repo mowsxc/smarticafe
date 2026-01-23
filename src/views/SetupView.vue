@@ -25,12 +25,15 @@
                 class="stepper-node"
                 :class="{ 'is-active': step >= i, 'is-current': step === i }"
               >
-                <div class="stepper-node-ring"></div>
-                <div class="stepper-node-dot">
-                  <svg v-if="step > i" class="stepper-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                  <span v-else class="stepper-number">{{ i }}</span>
+                <!-- 光圈容器：与圆点位置完全重合 -->
+                <div class="stepper-node-wrapper">
+                  <div class="stepper-node-ring"></div>
+                  <div class="stepper-node-dot">
+                    <svg v-if="step > i" class="stepper-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span v-else class="stepper-number">{{ i }}</span>
+                  </div>
                 </div>
                 <span class="stepper-label">{{ ['账号配置', '云端同步', '完成启动'][i-1] }}</span>
               </div>
@@ -61,9 +64,15 @@
                 <!-- Form Fields -->
                 <div class="step-body">
                   <div class="form-section">
-                    <div class="form-section-label">
-                      <span class="label-icon">🏪</span>
-                      <span>品牌设置</span>
+                    <div class="form-section-label" :class="{ 'is-focused': isBrandFocused }">
+                      <div class="label-icon-wrap">
+                        <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                          <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        <div class="label-icon-glow"></div>
+                      </div>
+                      <span class="label-text">品牌设置</span>
                     </div>
                     <div class="form-row">
                       <div class="form-field">
@@ -73,6 +82,8 @@
                           type="text" 
                           placeholder="如：创新意电竞"
                           class="field-input"
+                          @focus="isBrandFocused = true"
+                          @blur="isBrandFocused = false"
                         />
                       </div>
                       <div class="form-field">
@@ -82,6 +93,8 @@
                           type="text" 
                           placeholder="如：总店"
                           class="field-input"
+                          @focus="isBrandFocused = true"
+                          @blur="isBrandFocused = false"
                         />
                       </div>
                     </div>
@@ -90,9 +103,15 @@
                   <div class="form-divider"></div>
 
                   <div class="form-section">
-                    <div class="form-section-label">
-                      <span class="label-icon">👤</span>
-                      <span>管理员账号</span>
+                    <div class="form-section-label" :class="{ 'is-focused': isAdminFocused }">
+                      <div class="label-icon-wrap">
+                        <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                          <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <div class="label-icon-glow"></div>
+                      </div>
+                      <span class="label-text">管理员账号</span>
                     </div>
                     <div class="form-field">
                       <label class="field-label">显示名称</label>
@@ -101,6 +120,8 @@
                         type="text" 
                         placeholder="如：店长"
                         class="field-input"
+                        @focus="isAdminFocused = true"
+                        @blur="isAdminFocused = false"
                       />
                     </div>
                     <div class="form-row">
@@ -111,6 +132,8 @@
                           type="text" 
                           placeholder="如：admin"
                           class="field-input"
+                          @focus="isAdminFocused = true"
+                          @blur="isAdminFocused = false"
                         />
                       </div>
                       <div class="form-field">
@@ -120,6 +143,8 @@
                           type="password" 
                           placeholder="••••••"
                           class="field-input"
+                          @focus="isAdminFocused = true"
+                          @blur="isAdminFocused = false"
                         />
                       </div>
                     </div>
@@ -328,6 +353,10 @@ const settingsStore = useSettingsStore();
 const step = ref(1);
 const loading = ref(false);
 const errorMsg = ref('');
+
+// Form focus states for icon glow effects
+const isBrandFocused = ref(false);
+const isAdminFocused = ref(false);
 
 // Step 1: System Init
 const form = reactive({
@@ -597,13 +626,23 @@ const handleStep3 = async () => {
   gap: 12px;
 }
 
-.stepper-node-ring {
-  position: absolute;
+/* 光圈容器：用于精确居中对齐 */
+.stepper-node-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 48px;
   height: 48px;
+}
+
+.stepper-node-ring {
+  position: absolute;
+  inset: 0; /* 完全填充wrapper，实现中心对齐 */
   border-radius: 50%;
   border: 2px solid transparent;
   transition: all 0.4s var(--ease-smooth);
+  pointer-events: none;
 }
 
 .stepper-node.is-current .stepper-node-ring {
@@ -613,7 +652,7 @@ const handleStep3 = async () => {
 
 @keyframes ring-pulse {
   0%, 100% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.15); opacity: 0.2; }
+  50% { transform: scale(1.2); opacity: 0.15; }
 }
 
 .stepper-node-dot {
@@ -797,16 +836,70 @@ const handleStep3 = async () => {
 .form-section-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  padding: 8px 0;
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.form-section-label.is-focused {
+  color: var(--brand-orange);
+}
+
+/* 图标容器 - 用于光效定位 */
+.label-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
 }
 
 .label-icon {
-  font-size: 14px;
+  width: 20px;
+  height: 20px;
+  color: var(--text-tertiary);
+  transition: all 0.3s var(--ease-smooth);
+  position: relative;
+  z-index: 1;
+}
+
+.form-section-label.is-focused .label-icon {
+  color: var(--brand-orange);
+  transform: scale(1.1);
+}
+
+/* 图标发光效果 */
+.label-icon-glow {
+  position: absolute;
+  inset: -4px;
+  background: radial-gradient(circle, var(--brand-orange-glow) 0%, transparent 70%);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.4s var(--ease-smooth);
+  pointer-events: none;
+  filter: blur(4px);
+}
+
+.form-section-label.is-focused .label-icon-glow {
+  opacity: 0.8;
+  transform: scale(1);
+  animation: icon-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes icon-glow-pulse {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.15); }
+}
+
+.label-text {
+  transition: color 0.3s var(--ease-smooth);
 }
 
 .form-row {
@@ -1453,5 +1546,415 @@ const handleStep3 = async () => {
 .slide-up-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(-10px);
+}
+
+/* ===== Mobile Responsive ===== */
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
+  .setup-view {
+    padding: 24px;
+  }
+  
+  .setup-container {
+    max-width: 480px;
+  }
+  
+  .setup-card {
+    padding: 36px;
+    border-radius: 24px;
+  }
+  
+  .stepper {
+    margin-bottom: 32px;
+  }
+  
+  .stepper-track {
+    top: 18px;
+    left: 50px;
+    right: 50px;
+  }
+  
+  .stepper-node-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .stepper-node-dot {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+  
+  .stepper-label {
+    font-size: 10px;
+  }
+}
+
+/* Mobile Large (480px - 768px) */
+@media (max-width: 768px) {
+  .setup-view {
+    padding: 16px;
+    min-height: 100dvh;
+  }
+  
+  .setup-container {
+    max-width: 100%;
+  }
+  
+  .setup-card {
+    padding: 28px;
+    border-radius: 20px;
+    min-height: auto;
+  }
+  
+  .stepper {
+    margin-bottom: 24px;
+    padding: 0;
+  }
+  
+  .stepper-track {
+    top: 16px;
+    left: 40px;
+    right: 40px;
+    height: 2px;
+  }
+  
+  .stepper-node-wrapper {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .stepper-node-dot {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+    border-width: 1.5px;
+  }
+  
+  .stepper-check {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .stepper-label {
+    font-size: 9px;
+    letter-spacing: 0.3px;
+    max-width: 60px;
+    text-align: center;
+    line-height: 1.3;
+  }
+  
+  .stepper-node {
+    gap: 8px;
+  }
+  
+  .step-header {
+    text-align: center;
+  }
+  
+  .step-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+  }
+  
+  .step-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .step-title {
+    font-size: 20px;
+  }
+  
+  .step-subtitle {
+    font-size: 13px;
+  }
+  
+  .step-body {
+    gap: 20px;
+  }
+  
+  .form-section {
+    gap: 12px;
+  }
+  
+  .form-section-label {
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 11px;
+  }
+  
+  .label-icon-wrap {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .label-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .form-field {
+    gap: 4px;
+  }
+  
+  .field-label {
+    font-size: 10px;
+  }
+  
+  .field-input {
+    height: 44px;
+    font-size: 14px;
+    padding: 0 14px;
+    border-radius: 10px;
+  }
+  
+  .form-divider {
+    margin: 4px 0;
+  }
+  
+  .btn-primary {
+    height: 52px;
+    padding: 0 24px;
+    font-size: 14px;
+    border-radius: 14px;
+  }
+  
+  .btn-secondary {
+    height: 52px;
+    padding: 0 24px;
+    font-size: 14px;
+    border-radius: 14px;
+  }
+  
+  .btn-group {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  
+  .btn-group .btn-secondary,
+  .btn-group .btn-primary {
+    width: 100%;
+  }
+  
+  /* Cloud Toggle */
+  .cloud-toggle-card {
+    padding: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-radius: 14px;
+  }
+  
+  .toggle-content {
+    min-width: 0;
+    flex: 1 1 calc(100% - 80px);
+  }
+  
+  .toggle-title {
+    font-size: 13px;
+  }
+  
+  .toggle-desc {
+    font-size: 11px;
+  }
+  
+  .toggle-badge {
+    font-size: 9px;
+    padding: 3px 8px;
+  }
+  
+  /* Cloud Config */
+  .cloud-config {
+    padding: 16px 0;
+    gap: 12px;
+  }
+  
+  .cloud-disabled {
+    padding: 32px;
+  }
+  
+  .cloud-disabled svg {
+    width: 40px;
+    height: 40px;
+  }
+  
+  /* Success Badge */
+  .success-badge {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .success-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .success-ring--outer {
+    inset: -10px;
+  }
+  
+  /* Summary Card */
+  .summary-card {
+    max-width: 100%;
+    padding: 20px;
+    border-radius: 14px;
+  }
+  
+  .summary-row {
+    padding-bottom: 12px;
+    gap: 12px;
+  }
+  
+  .summary-label {
+    font-size: 10px;
+  }
+  
+  .summary-value {
+    font-size: 13px;
+  }
+  
+  /* Error Toast */
+  .error-toast {
+    padding: 12px 16px;
+    font-size: 11px;
+    border-radius: 12px;
+  }
+  
+  /* Debug Tools - hide on mobile */
+  .debug-tools {
+    display: none;
+  }
+  
+  /* Ambient effects - reduce on mobile for performance */
+  .ambient-orb {
+    filter: blur(60px);
+  }
+  
+  .ambient-orb--primary {
+    width: 300px;
+    height: 300px;
+    opacity: 0.04;
+  }
+  
+  .ambient-orb--secondary {
+    width: 250px;
+    height: 250px;
+    opacity: 0.03;
+  }
+  
+  .ambient-orb--accent {
+    display: none;
+  }
+  
+  .pattern-grid {
+    opacity: 0.3;
+    background-size: 32px 32px;
+  }
+  
+  .card-glow {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+/* Mobile Small (< 480px) */
+@media (max-width: 480px) {
+  .setup-view {
+    padding: 12px;
+  }
+  
+  .setup-card {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+  
+  .stepper-track {
+    left: 32px;
+    right: 32px;
+  }
+  
+  .stepper-label {
+    font-size: 8px;
+    max-width: 50px;
+  }
+  
+  .step-title {
+    font-size: 18px;
+  }
+  
+  .step-subtitle {
+    font-size: 12px;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    height: 48px;
+    font-size: 13px;
+  }
+}
+
+/* Landscape Mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+  .setup-view {
+    padding: 12px 24px;
+    min-height: auto;
+    height: auto;
+    overflow-y: auto;
+  }
+  
+  .setup-card {
+    min-height: auto;
+    padding: 24px;
+  }
+  
+  .stepper {
+    margin-bottom: 16px;
+  }
+  
+  .step-header {
+    margin-bottom: 16px;
+  }
+  
+  .step-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 8px;
+  }
+  
+  .step-title {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  
+  .step-body {
+    gap: 16px;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .ambient-orb,
+  .stepper-node-ring,
+  .label-icon-glow,
+  .card-shimmer,
+  .card-glow {
+    animation: none !important;
+  }
+  
+  .step-slide-enter-active,
+  .step-slide-leave-active,
+  .expand-enter-active,
+  .expand-leave-active,
+  .slide-up-enter-active,
+  .slide-up-leave-active {
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>
