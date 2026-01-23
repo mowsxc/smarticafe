@@ -9,7 +9,7 @@ import { useAutoFitTable } from '../composables/useAutoFitTable';
 import ProductCard from '../components/pos/ProductCard.vue';
 import CartItem from '../components/pos/CartItem.vue';
 import SnapshotModal from '../components/SnapshotModal.vue';
-import QuickLoginPanel from '../components/QuickLoginPanel.vue';
+import HandoverAuthModal from '../components/HandoverAuthModal.vue';
 import { createShiftRecord } from '../api/shift';
 import { getDefaultRedeemDiscount } from '../api/types';
 import { getSyncService, supabase, subscribeToTable } from '../services/supabase/client';
@@ -2626,11 +2626,10 @@ onBeforeUnmount(() => {
       @confirm="confirmHandover"
     />
 
-    <QuickLoginPanel
+    <HandoverAuthModal
       :is-open="showSuccessorPicker"
-      mode="successor"
       @close="showSuccessorPicker = false; pendingSnapshotHtml = ''; pendingSnapshotInfo = ''"
-      @select-successor="handleSelectSuccessor"
+      @success="handleSelectSuccessor"
     />
 
   </div>
