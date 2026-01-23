@@ -631,7 +631,11 @@ const handleNavClick = async (item: any) => {
           <div class="w-px h-8 bg-gray-200 rounded-full"></div>
 
           <!-- User Info -->
-          <div class="flex items-center gap-1.5 text-[11px]">
+          <div
+            class="flex items-center gap-1.5 text-[11px] cursor-pointer select-none hover:opacity-90 transition-opacity"
+            @click="openLoginPanel"
+            title="点击打开登录"
+          >
             <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
               <circle cx="12" cy="7" r="4"/>
