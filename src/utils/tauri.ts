@@ -30,7 +30,7 @@ export async function tauriCmd<T>(cmd: string, args: Record<string, any> = {}): 
   console.debug(`[HTTP] Remote Call: ${cmd}`, redact(args, SENSITIVE_KEYS));
   
   const apiHost = window.location.hostname;
-  const apiPort = 32521;
+  const apiPort = 32520;
   
   // Map command names to specific API routes
   let url = `http://${apiHost}:${apiPort}/api/rpc/${cmd}`;

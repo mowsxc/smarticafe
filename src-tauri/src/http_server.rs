@@ -16,7 +16,7 @@ use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 
 pub const API_HOST: [u8; 4] = [0, 0, 0, 0];
-pub const API_PORT: u16 = 32521;
+pub const API_PORT: u16 = 32520;
 
 // 共享的AppHandle
 pub struct AppState {
