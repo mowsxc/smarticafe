@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useSettingsStore } from '../stores/settings';
 import { toast } from '../composables/useToast';
 
 // 页面组件
@@ -26,7 +27,7 @@ const routes: RouteRecordRaw[] = [
     path: '/cashier',
     name: 'Cashier',
     component: CashierView,
-    meta: { requiresAuth: false, title: '收银台', icon: '💰', permission: 'view_cashier' },
+    meta: { requiresAuth: true, title: '收银台', icon: '💰', permission: 'view_cashier' },
   },
   {
     path: '/shift-records',
@@ -71,13 +72,36 @@ const router = createRouter({
   routes,
 });
 
+// 运行版本与启动时间 (用于标题显示)
+const APP_VERSION = '2.0.0';
+const LAUNCH_TIME = new Date().toLocaleString('zh-CN', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false
+}).replace(/\//g, '-');
+
 // 路由守卫
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
+  const settingsStore = useSettingsStore();
+
+  // 1. 优先检查系统是否已初始化
+  authStore.bootstrapRequired().then(required => {
+    if (required) {
+      // 如果需要初始化，且当前不是处于登录弹窗触发状态，则强制开启登录弹窗
+      if (!authStore.isLoginRequired) {
+          authStore.isLoginRequired = true;
+      }
+    }
+  });
   
   // 更新页面标题
   if (to.meta.title) {
-    document.title = `${to.meta.title} - 创新意电竞馆`;
+    const brand = settingsStore.brandSettings?.brandName || 'Smarticafe';
+    document.title = `${to.meta.title} - ${brand} - Smarticafe v${APP_VERSION} (${LAUNCH_TIME})`;
   }
 
   // 如果页面不需要认证，直接放行

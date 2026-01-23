@@ -20,8 +20,8 @@
             <div class="w-16 h-16 bg-linear-to-tr from-brand-orange to-orange-400 rounded-2xl mx-auto flex items-center justify-center shadow-xl shadow-orange-200/50 mb-4 animate-float">
                 <span class="text-3xl text-white font-black tracking-tighter">CX</span>
             </div>
-            <h2 class="text-2xl font-black text-gray-800 tracking-tight">创新意电竞 Pro</h2>
-            <p class="text-[11px] font-bold text-orange-500 uppercase tracking-[0.3em]">Smarticafe Pro System</p>
+            <h2 class="text-2xl font-black text-gray-800 tracking-tight">{{ settingsStore.brandSettings.brandName }}</h2>
+            <p class="text-[11px] font-bold text-orange-500 uppercase tracking-[0.3em]">{{ settingsStore.brandSettings.systemName }} System</p>
           </div>
 
           <div class="px-10 pb-12 space-y-10">
@@ -129,6 +129,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { useSettingsStore } from '../stores/settings';
 
 interface Props {
   isOpen: boolean;
@@ -143,6 +144,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const authStore = useAuthStore();
+const settingsStore = useSettingsStore();
 
 const employees = ref<string[]>([]);
 const shareholders = ref<string[]>([]);

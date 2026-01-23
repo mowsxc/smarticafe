@@ -28,6 +28,14 @@ pub struct AuthBootstrapAdminInput {
     pub pick_name: String,
     pub display_name: String,
     pub password: String,
+    pub brand_name: String,
+    pub store_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BrandSettings {
+    pub brand_name: String,
+    pub store_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,4 +1,4 @@
-// HTTP API Server for Smarticafe Pro
+// HTTP API Server for Smarticafe
 // 提供REST API，让浏览器也能访问真实数据
 
 use axum::{
@@ -349,7 +349,7 @@ pub async fn start_http_server(app: tauri::AppHandle) -> Result<(), Box<dyn std:
         .route("/rpc/:cmd", post(api_rpc_handler));
 
     let app_router = Router::new()
-        .route("/", get(|| async { "🚀 Smarticafe Pro API Hub is running!" }))
+        .route("/", get(|| async { "🚀 Smarticafe API Hub is running!" }))
         .nest("/api", api_routes)
         .layer(cors)
         .with_state(state);

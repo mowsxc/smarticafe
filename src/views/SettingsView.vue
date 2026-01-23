@@ -398,8 +398,13 @@ const systemTextStyle = computed<CSSProperties>(() => ({
 }));
 
 const saveSettings = async () => {
-  await settingsStore.syncToCloud();
-  success('设置已保存并已同步');
+  try {
+    await settingsStore.saveBrandSettings();
+    await settingsStore.syncToCloud();
+    success('设置已保存并已同步');
+  } catch (err) {
+    console.error('Save failed:', err);
+  }
 };
 </script>
 

@@ -16,8 +16,8 @@
             <div class="w-16 h-16 bg-linear-to-tr from-brand-orange to-orange-400 rounded-2xl mx-auto flex items-center justify-center shadow-xl shadow-orange-200/50 mb-4 animate-float">
               <span class="text-3xl text-white font-black tracking-tighter">CX</span>
             </div>
-            <h2 class="text-2xl font-black text-gray-800 tracking-tight">创新意电竞 Pro</h2>
-            <p class="text-[11px] font-bold text-orange-500 uppercase tracking-[0.3em]">Smarticafe Pro System</p>
+            <h2 class="text-2xl font-black text-gray-800 tracking-tight">{{ settingsStore.brandSettings.brandName }}</h2>
+            <p class="text-[11px] font-bold text-orange-500 uppercase tracking-[0.3em]">{{ settingsStore.brandSettings.systemName }} System</p>
           </div>
 
           <div class="px-10 pb-12 space-y-6">
@@ -66,12 +66,42 @@
                     <input
                       v-model="bootstrapPassword"
                       type="password"
-                      placeholder="设置密码"
+                      placeholder="设置超管密码"
                       class="flex-1 bg-transparent border-none outline-none font-mono text-[14px] font-bold text-gray-700 placeholder:text-gray-300"
                       @keyup.enter="handleBootstrap"
                     />
                   </div>
                 </div>
+
+                <div class="flex items-center gap-4 pt-2">
+                   <div class="h-px flex-1 bg-gray-100"></div>
+                   <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">店面品牌配置</span>
+                   <div class="h-px flex-1 bg-gray-100"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="relative group">
+                      <div class="relative flex items-center bg-white/60 border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[20px] h-12 px-5 transition-all">
+                        <input
+                          v-model="bootstrapBrandName"
+                          type="text"
+                          placeholder="品牌名称"
+                          class="flex-1 bg-transparent border-none outline-none text-[13px] font-bold text-gray-700 placeholder:text-gray-300"
+                        />
+                      </div>
+                    </div>
+                    <div class="relative group">
+                      <div class="relative flex items-center bg-white/60 border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[20px] h-12 px-5 transition-all">
+                        <input
+                          v-model="bootstrapStoreName"
+                          type="text"
+                          placeholder="门店/分店名"
+                          class="flex-1 bg-transparent border-none outline-none text-[13px] font-bold text-gray-700 placeholder:text-gray-300"
+                        />
+                      </div>
+                    </div>
+                </div>
+
               </div>
             </template>
 
@@ -160,9 +190,9 @@
               >
                 取消
               </button>
-              <button 
+                <button 
                 @click="bootstrapMode ? handleBootstrap() : handleLogin()"
-                :disabled="bootstrapMode ? (!bootstrapPickName.trim() || !bootstrapDisplayName.trim() || !bootstrapPassword.trim()) : !canLogin"
+                :disabled="bootstrapMode ? (!bootstrapPickName.trim() || !bootstrapDisplayName.trim() || !bootstrapPassword.trim() || !bootstrapBrandName.trim() || !bootstrapStoreName.trim()) : !canLogin"
                 class="flex-1 h-12 rounded-2xl bg-brand-orange text-white font-bold text-[12px] shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ bootstrapMode ? '创建超管并进入系统' : (isShareholder ? '验证并登录' : '免密登录') }}
@@ -184,6 +214,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { useSettingsStore } from '../stores/settings';
 
 interface Props {
   isOpen: boolean;
@@ -197,6 +228,7 @@ interface Emits {
 const emit = defineEmits<Emits>();
 
 const authStore = useAuthStore();
+const settingsStore = useSettingsStore();
 
 // Input state
 const username = ref('');
@@ -210,6 +242,8 @@ const bootstrapMode = ref(false);
 const bootstrapPickName = ref('');
 const bootstrapDisplayName = ref('');
 const bootstrapPassword = ref('');
+const bootstrapBrandName = ref('');
+const bootstrapStoreName = ref('');
 
 const props = defineProps<Props>();
 
@@ -292,10 +326,19 @@ const handleBootstrap = async () => {
       pickName: bootstrapPickName.value,
       displayName: bootstrapDisplayName.value,
       password: bootstrapPassword.value,
+      brandName: bootstrapBrandName.value,
+      storeName: bootstrapStoreName.value,
     });
+    // Update local settings immediately
+    settingsStore.brandSettings.brandName = bootstrapBrandName.value;
+    settingsStore.brandSettings.storeName = bootstrapStoreName.value;
+    
     bootstrapPickName.value = '';
     bootstrapDisplayName.value = '';
+    password.value = ''; // Clear generic password too
     bootstrapPassword.value = '';
+    bootstrapBrandName.value = '';
+    bootstrapStoreName.value = '';
     emit('login-success');
     emit('close');
   } catch (error: any) {

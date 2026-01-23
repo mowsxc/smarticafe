@@ -50,9 +50,9 @@ export interface BusinessSettings {
 
 export const useSettingsStore = defineStore('settings', () => {
   const brandSettings = ref<BrandSettings>({
-    brandName: '创新意 电竞馆',
-    systemName: 'SMARTICAFE',
-    storeName: '草场地',
+    brandName: '',
+    systemName: 'Smarticafe',
+    storeName: '',
     showStoreName: true,
   })
 
@@ -132,6 +132,20 @@ export const useSettingsStore = defineStore('settings', () => {
         console.warn('Failed to load brand settings')
       }
     }
+
+    // Load from Backend Database (The source of truth)
+    ;(async () => {
+      try {
+        const res = await tauriCmd<any>('auth_get_brand_settings')
+        if (res) {
+          brandSettings.value.brandName = res.brand_name
+          brandSettings.value.storeName = res.store_name
+          localStorage.setItem('brandSettings', JSON.stringify(brandSettings.value))
+        }
+      } catch (err) {
+        console.error('Failed to loading brand settings from DB:', err)
+      }
+    })()
 
     const savedLogo = localStorage.getItem('logoSettings')
     if (savedLogo) {
@@ -249,5 +263,20 @@ export const useSettingsStore = defineStore('settings', () => {
     businessSettings,
     init,
     syncToCloud,
+    saveBrandSettings: async () => {
+      try {
+          await tauriCmd('auth_update_brand_settings', { 
+              token: localStorage.getItem('auth_token') || '',
+              input: {
+                  brand_name: brandSettings.value.brandName,
+                  store_name: brandSettings.value.storeName
+              }
+          });
+          localStorage.setItem('brandSettings', JSON.stringify(brandSettings.value));
+      } catch (err) {
+          console.error('Failed to save brand settings:', err);
+          throw err;
+      }
+    }
   }
 })

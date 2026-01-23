@@ -270,6 +270,15 @@ pub fn auth_bootstrap_admin(app: AppHandle, input: AuthBootstrapAdminInput) -> R
     )
     .map_err(|e| format!("insert bootstrap admin: {e}"))?;
 
+    // Save Brand and Store Names
+    let brand_name = input.brand_name.trim();
+    let store_name = input.store_name.trim();
+    
+    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES('brand_name', ?1)", [brand_name])
+        .map_err(|e| format!("save brand_name: {e}"))?;
+    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES('store_name', ?1)", [store_name])
+        .map_err(|e| format!("save store_name: {e}"))?;
+
     let token = Uuid::new_v4().to_string();
     let mut map = auth_sessions().lock().map_err(|_| String::from("lock"))?;
     map.insert(token.clone(), id.clone());
@@ -619,6 +628,36 @@ pub fn operation_logs_list(_app: AppHandle, token: String, _limit: Option<i64>) 
     let conn = open_db(&_app)?;
     let _ = require_admin(&conn, token.trim())?;
     Ok(Vec::new())
+}
+
+#[tauri::command]
+pub fn auth_get_brand_settings(app: AppHandle) -> Result<BrandSettings, String> {
+    let conn = open_db(&app)?;
+    
+    let brand_name: String = conn.query_row("SELECT v FROM kv WHERE k = 'brand_name'", [], |r| r.get(0))
+        .optional()
+        .map_err(|e| format!("get brand_name: {e}"))?
+        .unwrap_or_else(|| "我的电竞馆".to_string());
+        
+    let store_name: String = conn.query_row("SELECT v FROM kv WHERE k = 'store_name'", [], |r| r.get(0))
+        .optional()
+        .map_err(|e| format!("get store_name: {e}"))?
+        .unwrap_or_else(|| "总店".to_string());
+
+    Ok(BrandSettings { brand_name, store_name })
+}
+
+#[tauri::command]
+pub fn auth_update_brand_settings(app: AppHandle, token: String, input: BrandSettings) -> Result<(), String> {
+    let conn = open_db(&app)?;
+    require_admin(&conn, &token)?;
+
+    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES('brand_name', ?1)", [input.brand_name.trim()])
+        .map_err(|e| format!("update brand_name: {e}"))?;
+    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES('store_name', ?1)", [input.store_name.trim()])
+        .map_err(|e| format!("update store_name: {e}"))?;
+
+    Ok(())
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]

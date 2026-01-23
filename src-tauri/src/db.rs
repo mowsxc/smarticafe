@@ -19,10 +19,12 @@ pub fn open_db(app: &AppHandle) -> Result<Connection, String> {
     
     init_db(&conn)?;
     
-    let now = now_ts()?;
-    ensure_auth_seed(&conn, now)?;
-    ensure_employees_seed(&conn, now)?;
-    ensure_products_seed(&conn, now)?;
+    // For clean install, we don't seed data initially.
+    // If needed later, you can uncomment these.
+    // let now = now_ts()?;
+    // ensure_auth_seed(&conn, now)?;
+    // ensure_employees_seed(&conn, now)?;
+    // ensure_products_seed(&conn, now)?;
     
     Ok(conn)
 }
@@ -170,10 +172,12 @@ fn init_db(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn ensure_auth_seed(_conn: &Connection, _now: i64) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn ensure_employees_seed(conn: &Connection, now: i64) -> Result<(), String> {
     let count: i64 = conn
         .query_row("SELECT COUNT(1) FROM employees", [], |r| r.get(0))
@@ -190,6 +194,7 @@ fn ensure_employees_seed(conn: &Connection, now: i64) -> Result<(), String> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn ensure_products_seed(conn: &Connection, now: i64) -> Result<(), String> {
     let count: i64 = conn
         .query_row("SELECT COUNT(1) FROM products", [], |r| r.get(0))

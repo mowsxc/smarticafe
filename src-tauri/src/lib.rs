@@ -53,6 +53,8 @@ pub fn run() {
             modules_list,
             api_list,
             operation_logs_list,
+            auth_get_brand_settings,
+            auth_update_brand_settings,
 
             // Product Commands
             products_list,

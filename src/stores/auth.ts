@@ -37,6 +37,8 @@ type BootstrapAdminInput = {
   pick_name: string;
   display_name: string;
   password: string;
+  brand_name: string;
+  store_name: string;
 };
 
 export const useAuthStore = defineStore('auth', () => {
@@ -63,13 +65,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const bootstrapAdmin = async (input: { pickName: string; displayName: string; password: string }) => {
+  const bootstrapAdmin = async (input: { pickName: string; displayName: string; password: string; brandName: string; storeName: string }) => {
     const payload: BootstrapAdminInput = {
       pick_name: String(input.pickName || '').trim(),
       display_name: String(input.displayName || '').trim(),
       password: String(input.password || '').trim(),
+      brand_name: String(input.brandName || '').trim(),
+      store_name: String(input.storeName || '').trim(),
     };
-    if (!payload.pick_name || !payload.display_name || !payload.password) {
+    if (!payload.pick_name || !payload.display_name || !payload.password || !payload.brand_name || !payload.store_name) {
       throw new Error('请输入完整信息');
     }
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "smarticafe",
-  "version": "0.1.0",
-  "identifier": "com.smarticafe",
+  "productName": "Smarticafe",
+  "version": "2.0.0",
+  "identifier": "com.aszeromo.smarticafe",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:32520",
