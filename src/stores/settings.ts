@@ -214,7 +214,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   watch(cloudSettings, () => {
     localStorage.setItem('cloudSettings', JSON.stringify(cloudSettings.value))
-    enqueueSetting('cloud', cloudSettings.value)
+    enqueueSetting('cloud', { enabled: cloudSettings.value.enabled })
     ;(async () => {
       try {
         await tauriCmd('kv_set', { key: 'settings.cloud', value: cloudSettings.value })
