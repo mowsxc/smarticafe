@@ -13,11 +13,25 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "创新意 电竞馆 - Smarticafe",
+        "label": "main",
+        "title": "Smarticafe | Loading...",
         "width": 1440,
         "height": 900,
         "minWidth": 1280,
-        "minHeight": 800
+        "minHeight": 800,
+        "visible": false,
+        "fullscreen": false
+      },
+      {
+        "label": "splashscreen",
+        "title": "Starting...",
+        "url": "splash.html",
+        "width": 340,
+        "height": 420,
+        "decorations": false,
+        "center": true,
+        "resizable": false,
+        "visible": true
       }
     ],
     "security": {

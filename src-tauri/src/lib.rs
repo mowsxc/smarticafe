@@ -37,6 +37,7 @@ pub fn run() {
             db_tables_info,
             api_stats,
             system_info,
+            close_splash,
 
             // Auth Commands
             auth_login,

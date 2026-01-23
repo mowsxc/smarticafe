@@ -148,3 +148,16 @@ pub fn system_info(app: AppHandle, token: String) -> Result<SystemInfo, String> 
         os: std::env::consts::OS.to_string(),
     })
 }
+
+#[tauri::command]
+pub async fn close_splash(app: AppHandle) -> Result<(), String> {
+    use tauri::Manager;
+    if let Some(splash) = app.get_webview_window("splashscreen") {
+        splash.close().map_err(|e| e.to_string())?;
+    }
+    if let Some(main) = app.get_webview_window("main") {
+        main.show().map_err(|e| e.to_string())?;
+        main.set_focus().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
