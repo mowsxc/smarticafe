@@ -22,7 +22,7 @@
 
           <div class="px-8 pb-8 space-y-6">
             <!-- Section: Employees -->
-            <div v-if="passwordlessEnabled()" class="space-y-4">
+            <div v-if="mode === 'successor' || passwordlessEnabled()" class="space-y-4">
               <div class="flex items-center gap-4">
                 <div class="h-px flex-1 bg-gray-100"></div>
                 <div class="flex flex-col items-center">
