@@ -373,27 +373,38 @@ const loading = ref(false);
 const errorMsg = ref('');
 const connectionStatus = ref<'none' | 'testing' | 'success' | 'error'>('none');
 
-// 💡 真·跨端记忆：从数据库恢复进度
-import { onMounted } from 'vue';
+// 💡 真·全量跨端存档：数据同步
+import { onMounted, watch } from 'vue';
+
 onMounted(async () => {
   try {
+    // 1. 恢复步骤
     const savedStep = await tauriCmd<number>('auth_get_setup_step');
-    if (savedStep) {
-      step.value = savedStep;
-    }
+    if (savedStep) step.value = savedStep;
+    
+    // 2. 恢复表单数据
+    const basicData = await tauriCmd<string>('auth_get_setup_data', { key: 'basic' });
+    if (basicData) Object.assign(form, JSON.parse(basicData));
+    
+    const cloudData = await tauriCmd<string>('auth_get_setup_data', { key: 'cloud' });
+    if (cloudData) Object.assign(cloudForm, JSON.parse(cloudData));
   } catch (e) {
-    console.warn('Failed to load setup step from DB');
+    console.warn('Load setup data error', e);
   }
 });
 
-// 每次步骤变化自动同步到数据库
+// 核心逻辑：填一个字存一次数据库
+watch(() => form, (newVal) => {
+  tauriCmd('auth_save_setup_data', { key: 'basic', data: JSON.stringify(newVal) });
+}, { deep: true });
+
+watch(() => cloudForm, (newVal) => {
+  tauriCmd('auth_save_setup_data', { key: 'cloud', data: JSON.stringify(newVal) });
+}, { deep: true });
+
 const saveProgress = async (newStep: number) => {
   step.value = newStep;
-  try {
-     await tauriCmd('auth_save_setup_step', { step: newStep });
-  } catch (e) {
-     console.error('Failed to sync step to DB');
-  }
+  await tauriCmd('auth_save_setup_step', { step: newStep });
 };
 
 // Form focus states for icon glow effects
@@ -1049,25 +1060,28 @@ const handleStep3 = async () => {
 
 /* 按钮高度规范化 */
 .btn-primary, .btn-secondary {
-  height: 52px; /* 统一规范高度 */
-  display: flex;
+  height: 54px !important; /* 加强权重，确保一致性 */
+  display: flex !important;
   align-items: center;
   justify-content: center;
   padding: 0 24px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
 }
 
-/* 按钮组规范化 */
+/* 按钮组规范化 - 针对第二步 */
 .btn-group {
-  display: grid;
-  grid-template-columns: 1fr 2fr; /* 第二步中，确定按钮占用更多空间 */
-  gap: 12px;
+  display: grid !important;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
   width: 100%;
+  margin-top: 8px; /* 稍微拉开与上方内容的距离 */
 }
 
 .btn-group .btn-secondary,
 .btn-group .btn-primary {
   width: 100%;
-  height: 52px; /* 强制对齐高度 */
+  height: 54px !important; /* 强制对齐高度 */
 }
 
 /* ===== Form Styles ===== */

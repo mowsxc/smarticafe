@@ -281,6 +281,28 @@ pub fn auth_save_setup_step(app: AppHandle, step: i32) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn auth_save_setup_data(app: AppHandle, key: String, data: String) -> Result<(), String> {
+    let conn = open_db(&app)?;
+    let now = now_ts()?;
+    conn.execute(
+        "INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES(?1, ?2, ?3)",
+        params![format!("setup_data_{}", key), data, now]
+    ).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn auth_get_setup_data(app: AppHandle, key: String) -> Result<String, String> {
+    let conn = open_db(&app)?;
+    let data: Option<String> = conn.query_row(
+        "SELECT v FROM kv WHERE k = ?",
+        [format!("setup_data_{}", key)],
+        |r| r.get(0)
+    ).optional().map_err(|e| e.to_string())?;
+    Ok(data.unwrap_or_default())
+}
+
+#[tauri::command]
 pub fn auth_get_setup_step(app: AppHandle) -> Result<i32, String> {
     let conn = open_db(&app)?;
     let step: Option<String> = conn.query_row(
