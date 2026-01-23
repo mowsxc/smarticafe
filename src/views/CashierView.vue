@@ -770,6 +770,9 @@ const loadActiveShiftFromCloud = async () => {
 
   activeShiftMissing.value = false;
 
+  // Preferred: instance-level active shift (date/shift/employee) via shifts.status=active
+  // Note: some deployments may have a different shifts schema (e.g. shift definitions).
+  // In that case PostgREST returns 400; we fallback to the latest shift_records entry.
   const { data, error } = await (supabase as any)
     .from('shifts')
     .select('date_ymd, shift_type, employee, start_at')
@@ -778,14 +781,35 @@ const loadActiveShiftFromCloud = async () => {
     .limit(1)
     .maybeSingle();
 
-  if (error || !data) {
+  if (!error && data) {
+    const dateYmd = String(data.date_ymd || '').trim();
+    const shift = String(data.shift_type || '').trim();
+    const employee = String(data.employee || '').trim();
+    if (dateYmd && shift && employee) {
+      activeShiftCtx.value = { dateYmd, shift, employee };
+      return;
+    }
+  }
+
+  if (error) {
+    console.warn('[loadActiveShiftFromCloud] shifts query failed, fallback to shift_records:', error);
+  }
+
+  const { data: fallbackData, error: fallbackError } = await (supabase as any)
+    .from('shift_records')
+    .select('date_ymd, shift, employee, created_at')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (fallbackError || !fallbackData) {
     activeShiftMissing.value = true;
     return;
   }
 
-  const dateYmd = String(data.date_ymd || '').trim();
-  const shift = String(data.shift_type || '').trim();
-  const employee = String(data.employee || '').trim();
+  const dateYmd = String(fallbackData.date_ymd || '').trim();
+  const shift = String(fallbackData.shift || '').trim();
+  const employee = String(fallbackData.employee || '').trim();
   if (!dateYmd || !shift || !employee) {
     activeShiftMissing.value = true;
     return;
