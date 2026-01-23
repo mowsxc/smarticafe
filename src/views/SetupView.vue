@@ -67,8 +67,8 @@
                   </div>
                 </div>
 
-                <!-- Scrollable Form Container (Scrollbar Hidden) -->
-                <div ref="formScrollRef" class="step-body hide-scrollbar">
+                <!-- Scrollable Form Container -->
+                <div class="step-body">
                   <!-- 品牌设置 Section -->
                   <div class="form-section">
                     <div class="form-section-label" :class="{ 'is-focused': isBrandFocused }">
@@ -159,7 +159,7 @@
                     </div>
                   </div>
 
-                  <!-- Action Button (Now part of the scroll flow) -->
+                  <!-- Action Button -->
                   <div class="step-footer-inline">
                     <button @click="handleStep1" :disabled="!isValidStep1 || loading" class="btn-primary">
                       <div v-if="loading" class="btn-spinner"></div>
@@ -186,7 +186,7 @@
                 </div>
 
                 <!-- Form Body -->
-                <div class="step-body hide-scrollbar">
+                <div class="step-body">
                   <!-- Toggle Switch -->
                   <label class="cloud-toggle-card" :class="{ 'is-enabled': cloudForm.enabled }">
                     <div class="toggle-switch">
@@ -270,7 +270,7 @@
 
               <!-- ===== STEP 3: Complete ===== -->
               <div v-else-if="step === 3" key="step3" class="step-content">
-                <div class="step-body hide-scrollbar step-content--center">
+                <div class="step-body step-content--center">
                   <!-- Success Animation -->
                   <div class="success-badge">
                     <div class="success-ring success-ring--outer"></div>
@@ -933,37 +933,43 @@ const handleStep3 = async () => {
   letter-spacing: 0.5px;
 }
 
-/* ===== Step Body (Scrollable) ===== */
+.setup-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 32px 40px;
+  position: relative;
+  overflow-y: auto; /* 这里开启全局滚动 */
+  overflow-x: hidden;
+  max-height: 85vh; /* 设置卡片自己的最大高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 隐藏滚动条样式 */
+.setup-card::-webkit-scrollbar {
+  display: none;
+}
+.setup-card {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* ===== Step Body ===== */
 .step-body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px; /* 极致精简：12 -> 8 */
-  overflow-y: auto;
-  overflow-x: hidden;
-  /* 优化高度计算：极简模式空间配额 */
-  max-height: calc(100vh - 220px); 
-  padding-right: 8px;
-  margin-right: -8px;
+  gap: 12px;
   position: relative;
-}
-
-/* ===== Hide Scrollbar ===== */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Edge */
-}
-
-.hide-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
 }
 
 /* Inline Footer for seamless flow */
 .step-footer-inline {
-  margin-top: 12px;
-  padding-bottom: 32px; /* 增加底部留白，触感更好 */
+  margin-top: 32px; /* 增加间距 */
+  padding-bottom: 32px; /* 增加底部留白 */
   display: flex;
-  justify-content: center; /* 按钮居中 */
+  justify-content: center;
   width: 100%;
 }
 
