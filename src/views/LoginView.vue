@@ -131,36 +131,46 @@ const suggests = computed(() => {
     <!-- 主卡片 -->
     <div v-if="!isLoading" class="relative z-10 w-full max-w-[440px] animate-in fade-in zoom-in duration-700">
       
-      <!-- 品牌标识项 -->
-      <div class="text-center mb-10">
-        <div class="w-20 h-20 bg-linear-to-tr from-brand-orange to-orange-400 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-6 group hover:rotate-12 transition-transform duration-500">
-          <span class="text-4xl text-white font-black italic">S</span>
+      <!-- 品牌标识项 (保持不变) -->
+      <div class="text-center mb-8">
+        <div class="w-24 h-24 bg-linear-to-tr from-brand-orange to-orange-400 rounded-[32px] mx-auto flex items-center justify-center shadow-2xl shadow-orange-500/30 mb-8 group hover:rotate-12 transition-all duration-700 active:scale-90">
+          <span class="text-6xl text-white font-black italic tracking-tighter">S</span>
         </div>
-        <h1 class="text-3xl font-black text-white tracking-tight">{{ isBootstrapping ? '系统初始化' : (settingsStore.brandSettings.brandName || 'Smarticafe') }}</h1>
-        <p class="text-slate-400 mt-2 font-medium tracking-wide uppercase text-xs">
-          {{ isBootstrapping ? 'FIRST-TIME SETUP' : (settingsStore.brandSettings.storeName || 'DIGITAL ESPORTS HUB') }}
+        <h1 class="text-4xl font-black text-white tracking-tight uppercase">{{ isBootstrapping ? '系统初始化' : (settingsStore.brandSettings.brandName || 'Smarticafe') }}</h1>
+        <p class="text-orange-500 mt-3 font-black tracking-[0.4em] uppercase text-[10px] opacity-80">
+          {{ isBootstrapping ? 'Initialize Smarticafe OS' : (settingsStore.brandSettings.storeName || 'Digital Hub') }}
         </p>
       </div>
 
-      <!-- 内容区：初始化模式 -->
-      <div v-if="isBootstrapping" class="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[40px] p-8 shadow-2xl space-y-5">
+      <!-- 内容区：初始化模式 (极致美化版) -->
+      <div v-if="isBootstrapping" class="bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[48px] p-10 shadow-[0_32px_120px_-20px_rgba(0,0,0,0.5)] space-y-8 animate-in slide-in-from-bottom-12 duration-1000">
+        
+        <!-- 分组1: 品牌信息 -->
         <div class="space-y-4">
-          <div class="group relative">
-            <input v-model="bootstrap.brandName" type="text" placeholder="品牌名称 (如：创新意电竞)" class="w-full bg-white/5 border border-white/10 rounded-2xl h-14 px-6 text-sm focus:border-brand-orange/50 focus:bg-white/10 outline-none transition-all" />
-          </div>
-          <div class="group relative">
-            <input v-model="bootstrap.storeName" type="text" placeholder="门店名称 (如：旗舰店)" class="w-full bg-white/5 border border-white/10 rounded-2xl h-14 px-6 text-sm focus:border-brand-orange/50 focus:bg-white/10 outline-none transition-all" />
-          </div>
-          <div class="h-px bg-white/5 my-2"></div>
-          <div class="grid grid-cols-2 gap-4">
-            <input v-model="bootstrap.pickName" type="text" placeholder="管理员账号" class="bg-white/5 border border-white/10 rounded-2xl h-14 px-6 text-sm outline-none focus:border-brand-orange/50 transition-all" />
-            <input v-model="bootstrap.displayName" type="text" placeholder="显示姓名" class="bg-white/5 border border-white/10 rounded-2xl h-14 px-6 text-sm outline-none focus:border-brand-orange/50 transition-all" />
-          </div>
-          <input v-model="bootstrap.password" type="password" placeholder="设置平台密码" class="w-full bg-white/5 border border-white/10 rounded-2xl h-14 px-6 text-sm focus:border-brand-orange/50 outline-none transition-all" />
+           <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Step 1: Brand / 品牌</div>
+           <div class="grid grid-cols-1 gap-3">
+              <div class="relative group">
+                <input v-model="bootstrap.brandName" type="text" placeholder="品牌名 (如: 创新意电竞)" class="w-full bg-white/5 border-2 border-white/10 rounded-[28px] h-16 px-8 text-white font-bold placeholder:text-slate-600 focus:border-brand-orange/40 focus:bg-white/10 outline-none transition-all" />
+              </div>
+              <input v-model="bootstrap.storeName" type="text" placeholder="门店名 (如: 旗舰店)" class="w-full bg-white/5 border-2 border-white/10 rounded-[28px] h-16 px-8 text-white font-bold placeholder:text-slate-600 focus:border-brand-orange/40 focus:bg-white/10 outline-none transition-all" />
+           </div>
         </div>
-        <button @click="handleBootstrap" class="w-full h-14 bg-brand-orange hover:bg-orange-500 text-white font-bold rounded-2xl shadow-xl shadow-orange-500/20 active:scale-[0.98] transition-all">
-          完成初始化并进入
+
+        <!-- 分组2: 超级管理员 -->
+        <div class="space-y-4 pt-4 border-t border-white/5">
+           <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-4">Step 2: Master Account / 超管</div>
+           <div class="grid grid-cols-2 gap-3">
+              <input v-model="bootstrap.pickName" type="text" placeholder="登录账号" class="bg-white/5 border-2 border-white/10 rounded-[28px] h-16 px-8 text-white font-bold outline-none focus:border-brand-orange/40 transition-all" />
+              <input v-model="bootstrap.displayName" type="text" placeholder="显示姓名" class="bg-white/5 border-2 border-white/10 rounded-[28px] h-16 px-8 text-white font-bold outline-none focus:border-brand-orange/40 transition-all" />
+           </div>
+           <input v-model="bootstrap.password" type="password" placeholder="设置全平台管理密码" class="w-full bg-white/5 border-2 border-white/10 rounded-[28px] h-16 px-8 text-white font-bold focus:border-brand-orange/40 outline-none transition-all" />
+        </div>
+
+        <button @click="handleBootstrap" class="w-full h-20 bg-linear-to-r from-brand-orange to-orange-400 hover:from-orange-500 hover:to-orange-600 text-white font-black text-xl rounded-[32px] shadow-2xl shadow-orange-500/40 active:scale-95 transition-all">
+          激活系统并开启
         </button>
+
+        <p class="text-center text-[9px] font-bold text-slate-600 uppercase tracking-widest">Powered by Smarticafe OS Engine</p>
       </div>
 
       <!-- 内容区：智能登录模式 -->
