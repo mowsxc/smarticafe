@@ -68,6 +68,8 @@ pub fn run() {
             auth_bootstrap_required,
             auth_bootstrap_admin,
             auth_complete_setup,
+            auth_save_setup_step,
+            auth_get_setup_step,
             auth_dbg_fully_reset_accounts,
             debug_seed_full_data,
             auth_pick_list,

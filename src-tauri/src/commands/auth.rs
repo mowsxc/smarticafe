@@ -264,7 +264,32 @@ pub fn auth_complete_setup(app: AppHandle) -> Result<(), String> {
         "INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('setup_completed', 'true', ?1)",
         params![now]
     ).map_err(|e| e.to_string())?;
+    // 完成后自动清除步骤标记
+    conn.execute("DELETE FROM kv WHERE k = 'setup_step'", []).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn auth_save_setup_step(app: AppHandle, step: i32) -> Result<(), String> {
+    let conn = open_db(&app)?;
+    let now = now_ts()?;
+    conn.execute(
+        "INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('setup_step', ?1, ?2)",
+        params![step.to_string(), now]
+    ).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn auth_get_setup_step(app: AppHandle) -> Result<i32, String> {
+    let conn = open_db(&app)?;
+    let step: Option<String> = conn.query_row(
+        "SELECT v FROM kv WHERE k = 'setup_step'",
+        [],
+        |r| r.get(0)
+    ).optional().map_err(|e| e.to_string())?;
+    
+    Ok(step.and_then(|v| v.parse().ok()).unwrap_or(1))
 }
 
 #[tauri::command]

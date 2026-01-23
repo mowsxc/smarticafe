@@ -373,19 +373,27 @@ const loading = ref(false);
 const errorMsg = ref('');
 const connectionStatus = ref<'none' | 'testing' | 'success' | 'error'>('none');
 
-// 💡 记忆功能：组件挂载时恢复进度
+// 💡 真·跨端记忆：从数据库恢复进度
 import { onMounted } from 'vue';
-onMounted(() => {
-  const savedStep = localStorage.getItem('smarticafe_setup_step');
-  if (savedStep) {
-    step.value = parseInt(savedStep);
+onMounted(async () => {
+  try {
+    const savedStep = await tauriCmd<number>('auth_get_setup_step');
+    if (savedStep) {
+      step.value = savedStep;
+    }
+  } catch (e) {
+    console.warn('Failed to load setup step from DB');
   }
 });
 
-// 每次步骤变化自动保存
-const saveProgress = (newStep: number) => {
+// 每次步骤变化自动同步到数据库
+const saveProgress = async (newStep: number) => {
   step.value = newStep;
-  localStorage.setItem('smarticafe_setup_step', newStep.toString());
+  try {
+     await tauriCmd('auth_save_setup_step', { step: newStep });
+  } catch (e) {
+     console.error('Failed to sync step to DB');
+  }
 };
 
 // Form focus states for icon glow effects
@@ -1039,11 +1047,27 @@ const handleStep3 = async () => {
   width: 100%;
 }
 
-/* 确保按钮在滚动流中看起来像个主体 */
-.step-footer-inline .btn-primary,
-.step-footer-inline .btn-group {
-  width: 100%; /* 默认全宽更好用，尤其是移动端 */
-  max-width: 400px; /* PC端防止太长 */
+/* 按钮高度规范化 */
+.btn-primary, .btn-secondary {
+  height: 52px; /* 统一规范高度 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+/* 按钮组规范化 */
+.btn-group {
+  display: grid;
+  grid-template-columns: 1fr 2fr; /* 第二步中，确定按钮占用更多空间 */
+  gap: 12px;
+  width: 100%;
+}
+
+.btn-group .btn-secondary,
+.btn-group .btn-primary {
+  width: 100%;
+  height: 52px; /* 强制对齐高度 */
 }
 
 /* ===== Form Styles ===== */
