@@ -368,21 +368,35 @@ const router = useRouter();
 const authStore = useAuthStore();
 const settingsStore = useSettingsStore();
 
+// 1. 数据定义 (最优先)
+const form = reactive({
+    pickName: '',
+    displayName: '',
+    password: '',
+    brandName: '',
+    storeName: '',
+});
+
+const cloudForm = reactive({
+    enabled: false,
+    url: '',
+    key: ''
+});
+
+// 2. 状态定义
 const step = ref(1);
 const loading = ref(false);
 const errorMsg = ref('');
 const connectionStatus = ref<'none' | 'testing' | 'success' | 'error'>('none');
 
-// 💡 真·全量跨端存档：数据同步
+// 3. 挂载与监听
 import { onMounted, watch } from 'vue';
 
 onMounted(async () => {
   try {
-    // 1. 恢复步骤
     const savedStep = await tauriCmd<number>('auth_get_setup_step');
     if (savedStep) step.value = savedStep;
     
-    // 2. 恢复表单数据
     const basicData = await tauriCmd<string>('auth_get_setup_data', { key: 'basic' });
     if (basicData) Object.assign(form, JSON.parse(basicData));
     
@@ -393,7 +407,6 @@ onMounted(async () => {
   }
 });
 
-// 核心逻辑：填一个字存一次数据库
 watch(() => form, (newVal) => {
   tauriCmd('auth_save_setup_data', { key: 'basic', data: JSON.stringify(newVal) });
 }, { deep: true });
@@ -451,7 +464,6 @@ const handleBrandBlur = () => {
 const handleStoreBlur = () => {
   isBrandFocused.value = false;
   
-  // If both brand fields are filled and store was just completed
   if (form.brandName && form.storeName && !form.displayName) {
     setTimeout(() => {
       scrollToAdminSection();
@@ -459,15 +471,7 @@ const handleStoreBlur = () => {
   }
 };
 
-// Step 1: System Init
-const form = reactive({
-    pickName: '',
-    displayName: '',
-    password: '',
-    brandName: '',
-    storeName: '',
-});
-
+// 4. 初始化业务 (Step 1: System Init 已删除重复定义)
 const injectTest = async () => {
     if(!confirm("Create Full Test Data? (MoJian, CuiGuoli, etc.)")) return;
     try {
@@ -523,12 +527,7 @@ const simulateTraffic = async () => {
     }
 };
 
-// Step 2: Cloud
-const cloudForm = reactive({
-    enabled: false,
-    url: '',
-    key: ''
-});
+// Step 2: Cloud (已在上方定义)
 
 const isValidStep1 = computed(() => {
     return form.pickName && form.displayName && form.password && form.brandName && form.storeName;
@@ -580,6 +579,11 @@ const handleStep1 = async () => {
         
         saveProgress(2); // 持久化进度
     } catch (e: any) {
+        // 如果后端提示已初始化，我们也认为第一步过了，允许进入下一步
+        if (e.message?.includes('already_initialized')) {
+            saveProgress(2);
+            return;
+        }
         errorMsg.value = e.message || '初始化失败，请重试';
     } finally {
         loading.value = false;
@@ -1072,16 +1076,17 @@ const handleStep3 = async () => {
 /* 按钮组规范化 - 针对第二步 */
 .btn-group {
   display: grid !important;
-  grid-template-columns: 1fr 2fr;
-  gap: 16px;
-  width: 100%;
-  margin-top: 8px; /* 稍微拉开与上方内容的距离 */
+  grid-template-columns: 1fr 2fr !important;
+  gap: 16px !important;
+  width: 100% !important;
+  margin-top: 8px !important;
+  min-height: 54px !important; /* 🔥 强制锁定最小高度 */
 }
 
-.btn-group .btn-secondary,
-.btn-group .btn-primary {
-  width: 100%;
-  height: 54px !important; /* 强制对齐高度 */
+.btn-group button {
+  height: 54px !important; /* 🔥 强制子元素高度 */
+  line-height: 54px !important;
+  padding: 0 !important;
 }
 
 /* ===== Form Styles ===== */

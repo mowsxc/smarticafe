@@ -362,6 +362,46 @@ async fn api_rpc_handler(
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
+        "auth_get_setup_step" => {
+            match crate::commands::auth::auth_get_setup_step(state.app.clone()) {
+                Ok(v) => Ok(ApiResponse::ok(serde_json::to_value(v).unwrap())),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        "auth_save_setup_step" => {
+            let step = _args["step"].as_i64().unwrap_or(1) as i32;
+            match crate::commands::auth::auth_save_setup_step(state.app.clone(), step) {
+                Ok(_) => Ok(ApiResponse::ok(Value::Null)),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        "auth_save_setup_data" => {
+            let key = _args["key"].as_str().unwrap_or("").to_string();
+            let data = _args["data"].as_str().unwrap_or("").to_string();
+            match crate::commands::auth::auth_save_setup_data(state.app.clone(), key, data) {
+                Ok(_) => Ok(ApiResponse::ok(Value::Null)),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        "auth_get_setup_data" => {
+            let key = _args["key"].as_str().unwrap_or("").to_string();
+            match crate::commands::auth::auth_get_setup_data(state.app.clone(), key) {
+                Ok(v) => Ok(ApiResponse::ok(serde_json::to_value(v).unwrap())),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        "auth_complete_setup" => {
+            match crate::commands::auth::auth_complete_setup(state.app.clone()) {
+                Ok(_) => Ok(ApiResponse::ok(Value::Null)),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        "auth_dbg_fully_reset_accounts" => {
+            match crate::commands::auth::auth_dbg_fully_reset_accounts(state.app.clone()) {
+                Ok(_) => Ok(ApiResponse::ok(Value::Null)),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
 
         _ => Err(ApiResponse::err(format!("unsupported_rpc_cmd: {}", cmd))),
     }
