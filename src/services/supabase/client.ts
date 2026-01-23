@@ -650,7 +650,8 @@ export async function initSupabaseSync(): Promise<void> {
 export function subscribeToTable(
   table: string,
   filter: string | undefined,
-  callback: (payload: any) => void
+  callback: (payload: any) => void,
+  onStatus?: (status: string) => void
 ) {
   if (!supabase) return null
 
@@ -672,6 +673,11 @@ export function subscribeToTable(
       }
     )
     .subscribe((status) => {
+      try {
+        onStatus?.(String(status))
+      } catch {
+        // ignore
+      }
       if (status === 'SUBSCRIBED') {
         console.log(`✅ Subscribed to ${table} changes`)
       }

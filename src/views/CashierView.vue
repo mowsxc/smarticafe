@@ -40,6 +40,31 @@ const cart = useCartStore();
 
 const activeShiftCtx = ref<{ dateYmd: string; shift: string; employee: string } | null>(null);
 
+const realtimeStatus = ref<string>('DISCONNECTED');
+const lastCloudUpdatedAt = ref<string | null>(null);
+
+const shiftCtxForUi = computed(() => getShiftCtx());
+const permissionLabel = computed(() => (canEdit.value ? '可编辑' : '只读'));
+const realtimeLabel = computed(() => {
+  const s = String(realtimeStatus.value || '').toUpperCase();
+  if (!s || s === 'DISCONNECTED') return '未连接';
+  if (s === 'SUBSCRIBED') return '实时已连接';
+  if (s === 'CLOSED') return '连接已关闭';
+  if (s === 'CHANNEL_ERROR') return '连接异常';
+  return s;
+});
+const realtimeDotClass = computed(() => {
+  const s = String(realtimeStatus.value || '').toUpperCase();
+  if (s === 'SUBSCRIBED') return 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+  if (s === 'CHANNEL_ERROR') return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]';
+  return 'bg-gray-400';
+});
+const lastCloudUpdatedAtShort = computed(() => {
+  const v = lastCloudUpdatedAt.value;
+  if (!v) return '--';
+  return v.replace('T', ' ').replace('Z', '').slice(0, 19);
+});
+
 const getShiftCtx = () => {
   if (activeShiftCtx.value) return activeShiftCtx.value;
   return {
@@ -886,6 +911,8 @@ const loadShiftLiveFromCloud = async () => {
 
   if (error || !data?.payload) return;
 
+  lastCloudUpdatedAt.value = data?.updated_at ? String(data.updated_at) : null;
+
   if (!canEdit.value) {
     await applyShiftLiveDraft(data.payload);
   }
@@ -904,15 +931,26 @@ const setupShiftLiveRealtime = () => {
   } catch {
     // ignore
   }
-  shiftLiveSubscription = subscribeToTable('shift_live', `id=eq.${id}`, async (payload: any) => {
+  shiftLiveSubscription = subscribeToTable(
+    'shift_live',
+    `id=eq.${id}`,
+    async (payload: any) => {
     const now = Date.now();
     if (canEdit.value && now - lastLocalEditAt.value < 2000) return;
     const nextDraft = payload?.new?.payload;
     if (!nextDraft) return;
+
+    const updatedAt = payload?.new?.updated_at;
+    if (updatedAt) lastCloudUpdatedAt.value = String(updatedAt);
+
     if (!canEdit.value) {
       await applyShiftLiveDraft(nextDraft);
     }
-  });
+    },
+    (status: string) => {
+      realtimeStatus.value = status;
+    }
+  );
 };
 
 const persistShiftLive = async (draft: any) => {
@@ -1680,15 +1718,33 @@ onBeforeUnmount(() => {
                    </div>
                    <!-- Staff Info -->
                    <div class="flex items-center bg-white/50 backdrop-blur-md rounded-2xl border border-white/60 px-4 h-9 text-[11px] gap-3 shadow-sm">
-                      <span class="font-bold text-gray-400">{{ app.currentDate }}</span>
+                      <span class="font-bold text-gray-400">{{ shiftCtxForUi.dateYmd }}</span>
                       <span class="w-px h-3 bg-gray-200"></span>
-                      <span class="font-black text-brand-orange">{{ app.currentShift }}</span>
+                      <span class="font-black text-brand-orange">{{ shiftCtxForUi.shift }}</span>
                       <span class="w-px h-3 bg-gray-200"></span>
                       <div class="flex items-center gap-2">
                         <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                        <span class="font-black text-gray-800">{{ app.currentEmployee }}</span>
+                        <span class="font-black text-gray-800">{{ shiftCtxForUi.employee }}</span>
                       </div>
                    </div>
+
+                    <div class="flex items-center bg-white/30 backdrop-blur-md rounded-2xl border border-white/50 px-3 h-9 text-[11px] gap-3 shadow-inner">
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-400">权限</span>
+                        <span class="font-black" :class="canEdit ? 'text-emerald-600' : 'text-gray-600'">{{ permissionLabel }}</span>
+                      </div>
+                      <div class="w-px h-3 bg-gray-200/60"></div>
+                      <div class="flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full" :class="realtimeDotClass"></div>
+                        <span class="text-gray-400">实时</span>
+                        <span class="font-black text-gray-800">{{ realtimeLabel }}</span>
+                      </div>
+                      <div class="w-px h-3 bg-gray-200/60"></div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-400">云端更新</span>
+                        <span class="font-mono text-[10px] text-gray-700">{{ lastCloudUpdatedAtShort }}</span>
+                      </div>
+                    </div>
                    
                     <!-- Stats -->
                     <div class="flex items-center bg-white/20 backdrop-blur-md p-1 rounded-2xl border border-white/40 h-9 gap-3 px-3 shadow-inner">
