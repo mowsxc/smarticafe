@@ -91,17 +91,16 @@ const LAUNCH_TIME = new Date().toLocaleString('zh-CN', {
 }).replace(/\//g, '-');
 
 // 路由守卫
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
   const settingsStore = useSettingsStore();
 
   // 1. 优先检查系统是否已初始化
-  authStore.bootstrapRequired().then(required => {
-    if (required && to.name !== 'Login') {
-      next('/login');
-      return;
-    }
-  });
+  const isBootstrapRequired = await authStore.bootstrapRequired();
+  if (isBootstrapRequired && to.name !== 'Login') {
+    next('/login');
+    return;
+  }
   
   // 更新页面标题
   if (to.meta.title) {

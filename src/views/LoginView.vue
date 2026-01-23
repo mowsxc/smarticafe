@@ -142,94 +142,89 @@ const suggests = computed(() => {
         </p>
       </div>
 
-      <!-- 品牌标识项 (保持不变) -->
-      <div class="text-center mb-8">
-        <div class="w-24 h-24 bg-linear-to-tr from-brand-orange to-orange-400 rounded-[32px] mx-auto flex items-center justify-center shadow-2xl shadow-orange-500/30 mb-8 group hover:rotate-12 transition-all duration-700 active:scale-90">
-          <span class="text-6xl text-white font-black italic tracking-tighter">S</span>
+      <!-- 品牌标识项 (参照截图：极致极简) -->
+      <div class="text-center mb-16">
+        <div class="w-40 h-40 bg-brand-orange rounded-[48px] mx-auto flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-12">
+          <span class="text-8xl text-white font-black">S</span>
         </div>
-        <h1 class="text-4xl font-black text-white tracking-tight uppercase">{{ isBootstrapping ? '系统初始化' : (settingsStore.brandSettings.brandName || 'Smarticafe') }}</h1>
-        <p class="text-orange-500 mt-3 font-black tracking-[0.4em] uppercase text-[10px] opacity-80">
-          {{ isBootstrapping ? 'Step Into Future' : (settingsStore.brandSettings.storeName || 'DIGITAL HUB') }}
-        </p>
+        <h1 class="text-5xl font-black text-slate-800 tracking-tighter mb-4">{{ isBootstrapping ? 'Smarticafe' : (settingsStore.brandSettings.brandName || 'Smarticafe') }}</h1>
+        <p class="text-slate-400 font-bold text-lg">请先完成身份验证以进入系统</p>
       </div>
 
-      <!-- 内容区：初始化模式 (高级白版本) -->
-      <div v-if="isBootstrapping" class="bg-white rounded-[48px] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.6)] space-y-8 animate-in slide-in-from-bottom-12 duration-1000">
-        
+      <!-- 内容区：初始化模式 (极致白色卡片版) -->
+      <div v-if="isBootstrapping" class="bg-white rounded-[56px] p-12 shadow-[0_40px_120px_-20px_rgba(0,0,0,0.15)] space-y-10 animate-in slide-in-from-bottom-12 duration-1000">
         <!-- 分组1: 品牌信息 -->
-        <div class="space-y-4">
-           <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">01. Identity / 品牌设定</div>
-           <div class="grid grid-cols-1 gap-3">
-              <input v-model="bootstrap.brandName" type="text" placeholder="品牌名 (如: 创新意电竞)" class="w-full bg-slate-50 border-2 border-slate-50 rounded-[28px] h-16 px-8 text-slate-800 font-bold placeholder:text-slate-300 focus:border-brand-orange/20 focus:bg-white outline-none transition-all" />
-              <input v-model="bootstrap.storeName" type="text" placeholder="门店名 (如: 旗舰店)" class="w-full bg-slate-50 border-2 border-slate-50 rounded-[28px] h-16 px-8 text-slate-800 font-bold placeholder:text-slate-300 focus:border-brand-orange/20 focus:bg-white outline-none transition-all" />
+        <div class="space-y-6">
+           <div class="text-[11px] font-black text-slate-300 uppercase tracking-widest ml-4">Step 01. Brand Design / 品牌设定</div>
+           <div class="grid grid-cols-1 gap-4">
+              <input v-model="bootstrap.brandName" type="text" placeholder="设置品牌名称" class="w-full bg-slate-50 rounded-[28px] h-20 px-10 text-xl font-bold placeholder:text-slate-200 focus:bg-white border-2 border-transparent focus:border-brand-orange/20 outline-none transition-all" />
+              <input v-model="bootstrap.storeName" type="text" placeholder="设置门店名称" class="w-full bg-slate-50 rounded-[28px] h-20 px-10 text-xl font-bold placeholder:text-slate-200 focus:bg-white border-2 border-transparent focus:border-brand-orange/20 outline-none transition-all" />
            </div>
         </div>
 
         <!-- 分组2: 超级管理员 -->
-        <div class="space-y-4 pt-4 border-t border-slate-100">
-           <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">02. Master / 超管账号</div>
-           <div class="grid grid-cols-2 gap-3">
-              <input v-model="bootstrap.pickName" type="text" placeholder="登录账号" class="bg-slate-50 border-2 border-slate-50 rounded-[28px] h-16 px-8 text-slate-800 font-bold outline-none focus:border-brand-orange/20 focus:bg-white transition-all" />
-              <input v-model="bootstrap.displayName" type="text" placeholder="显示姓名" class="bg-slate-50 border-2 border-slate-50 rounded-[28px] h-16 px-8 text-slate-800 font-bold outline-none focus:border-brand-orange/20 focus:bg-white transition-all" />
+        <div class="space-y-6 pt-8 border-t border-slate-50">
+           <div class="text-[11px] font-black text-slate-300 uppercase tracking-widest ml-4">Step 02. Administrator / 超级管理</div>
+           <div class="grid grid-cols-2 gap-4">
+              <input v-model="bootstrap.pickName" type="text" placeholder="管理账号" class="bg-slate-50 rounded-[28px] h-20 px-10 text-xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-brand-orange/20 transition-all" />
+              <input v-model="bootstrap.displayName" type="text" placeholder="显示姓名" class="bg-slate-50 rounded-[28px] h-20 px-10 text-xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-brand-orange/20 transition-all" />
            </div>
-           <input v-model="bootstrap.password" type="password" placeholder="设置全平台管理密码" class="w-full bg-slate-50 border-2 border-slate-50 rounded-[28px] h-16 px-8 text-slate-800 font-bold focus:border-brand-orange/20 focus:bg-white outline-none transition-all" />
+           <input v-model="bootstrap.password" type="password" placeholder="设置管理密码" class="w-full bg-slate-50 rounded-[28px] h-20 px-10 text-xl font-bold outline-none focus:bg-white border-2 border-transparent focus:border-brand-orange/20 transition-all" />
         </div>
 
-        <button @click="handleBootstrap" class="w-full h-20 bg-gray-900 hover:bg-black text-white font-black text-xl rounded-[32px] shadow-2xl active:scale-95 transition-all">
-          完成初始化
+        <button @click="handleBootstrap" class="w-full h-24 bg-slate-900 hover:bg-black text-white font-black text-2xl rounded-[32px] shadow-2xl active:scale-95 transition-all">
+          激活并进入系统
         </button>
-
-        <p class="text-center text-[9px] font-bold text-slate-300 uppercase tracking-widest">Enterprise Edition • Smarticafe OS</p>
       </div>
 
-      <!-- 内容区：智能登录模式 (高级白版本) -->
-      <div v-else class="bg-white rounded-[48px] p-12 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.6)]">
-        <div class="space-y-6">
+      <!-- 内容区：智能登录模式 (极致白色卡片版) -->
+      <div v-else class="bg-white rounded-[56px] p-12 shadow-[0_40px_120px_-20px_rgba(0,0,0,0.15)]">
+        <div class="space-y-10">
           <div class="relative group">
-            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-3 block text-center">Identity / 身份验证</label>
+            <label class="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em] ml-1 mb-4 block text-center">Verify Identity / 身份验证</label>
             <input 
               v-model="searchName" 
               @input="handleNameChange"
               type="text" 
               placeholder="输入或选择姓名" 
-              class="w-full bg-slate-50 border-2 border-slate-50 rounded-[32px] h-20 px-8 text-2xl font-black text-slate-800 placeholder:text-slate-200 focus:border-brand-orange/20 focus:bg-white outline-none transition-all text-center"
+              class="w-full bg-slate-50 border-2 border-slate-50 rounded-[40px] h-24 px-10 text-3xl font-black text-slate-800 placeholder:text-slate-200 focus:border-brand-orange/20 focus:bg-white outline-none transition-all text-center placeholder:font-bold"
             />
             
-            <div v-if="!showPasswordInput && suggests.length > 0" class="flex flex-wrap justify-center gap-2 mt-8">
+            <div v-if="!showPasswordInput && suggests.length > 0" class="flex flex-wrap justify-center gap-3 mt-10">
                <button 
                 v-for="name in suggests" 
                 :key="name"
                 @click="selectSuggest(name)"
-                class="px-5 py-3 rounded-full bg-slate-50 border border-slate-100 hover:border-brand-orange/30 hover:bg-brand-orange/5 text-xs font-black text-slate-500 hover:text-brand-orange transition-all"
+                class="px-8 py-4 rounded-full bg-slate-50 border border-slate-100 hover:border-brand-orange/30 hover:bg-brand-orange/5 text-sm font-black text-slate-500 hover:text-brand-orange transition-all shadow-sm active:scale-95"
                >
                  {{ name }}
                </button>
             </div>
           </div>
 
-          <div v-if="showPasswordInput" class="animate-in slide-in-from-top-4 fade-in duration-500">
+          <div v-if="showPasswordInput" class="animate-in slide-in-from-top-6 fade-in duration-700">
              <div class="relative group">
                 <input 
                   v-model="password" 
                   @keyup.enter="handleBossLogin"
                   :type="isPasswordVisible ? 'text' : 'password'" 
                   placeholder="请输入管理密码" 
-                  class="w-full bg-slate-50 border-2 border-brand-orange/20 rounded-[32px] h-20 px-8 text-center text-xl font-mono focus:border-brand-orange focus:bg-white outline-none transition-all shadow-xl shadow-orange-500/5"
+                  class="w-full bg-slate-50 border-2 border-brand-orange/20 rounded-[40px] h-24 px-10 text-center text-3xl font-mono focus:border-brand-orange focus:bg-white outline-none transition-all shadow-xl shadow-orange-500/5 placeholder:text-slate-200"
                   autofocus
                 />
              </div>
-             <button @click="handleBossLogin" class="w-full h-20 bg-brand-orange hover:bg-orange-500 text-white font-black text-xl rounded-[32px] mt-6 shadow-2xl shadow-orange-500/30 active:scale-95 transition-all">
-                确认登录
+             <button @click="handleBossLogin" class="w-full h-24 bg-brand-orange hover:bg-orange-500 text-white font-black text-2xl rounded-[40px] mt-8 shadow-2xl shadow-orange-500/30 active:scale-95 transition-all">
+                确认并进入系统
              </button>
-             <button @click="searchName = ''; showPasswordInput = false" class="w-full mt-6 text-[10px] font-black text-slate-300 hover:text-slate-400 transition-colors uppercase tracking-widest">
-                ← 返回选择
+             <button @click="searchName = ''; showPasswordInput = false" class="w-full mt-8 text-[11px] font-black text-slate-300 hover:text-slate-400 transition-colors uppercase tracking-[0.2em]">
+                ← Back to Selection / 返回
              </button>
           </div>
           
-          <div v-if="!showPasswordInput" class="text-center pt-10">
-             <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-slate-50 text-[10px] font-black text-slate-400 border border-slate-100">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                SYSTEM SECURED
+          <div v-if="!showPasswordInput" class="text-center pt-12">
+             <div class="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-slate-50 text-[11px] font-black text-slate-300 border border-slate-100">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.4)]"></span>
+                SYSTEM SECURED BY SMARTICAFE
              </div>
           </div>
         </div>
