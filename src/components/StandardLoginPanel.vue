@@ -21,7 +21,14 @@
           </div>
 
           <div class="px-10 pb-12 space-y-6">
-            <template v-if="bootstrapMode">
+            <template v-if="checkingBootstrap">
+              <div class="flex flex-col items-center justify-center py-12 space-y-4">
+                <div class="w-8 h-8 border-4 border-brand-orange/20 border-t-brand-orange rounded-full animate-spin"></div>
+                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">正在检测系统状态...</p>
+              </div>
+            </template>
+
+            <template v-else-if="bootstrapMode">
               <div class="space-y-3">
                 <div class="flex items-center gap-4">
                   <div class="h-px flex-1 bg-gray-100"></div>
@@ -239,6 +246,7 @@ const employees = ref<string[]>([]);
 const bosses = ref<string[]>([]);
 
 const bootstrapMode = ref(false);
+const checkingBootstrap = ref(true);
 const bootstrapPickName = ref('');
 const bootstrapDisplayName = ref('');
 const bootstrapPassword = ref('');
@@ -250,15 +258,23 @@ const props = defineProps<Props>();
 watch(
   () => props.isOpen,
   async (val) => {
-    if (!val) return;
-    errorMessage.value = '';
-    password.value = '';
+    if (val) {
+      checkingBootstrap.value = true;
+      errorMessage.value = '';
+      password.value = '';
 
-    bootstrapMode.value = await authStore.bootstrapRequired();
-    if (!bootstrapMode.value) {
-      const list = await authStore.fetchPickList();
-      employees.value = list.employees || [];
-      bosses.value = list.bosses || [];
+      try {
+        bootstrapMode.value = await authStore.bootstrapRequired();
+        if (!bootstrapMode.value) {
+          const list = await authStore.fetchPickList();
+          employees.value = list.employees || [];
+          bosses.value = list.bosses || [];
+        }
+      } catch (err) {
+        console.error('Bootstrap check failed:', err);
+      } finally {
+        checkingBootstrap.value = false;
+      }
     }
   },
   { immediate: true },

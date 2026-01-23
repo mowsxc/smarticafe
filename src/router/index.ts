@@ -11,18 +11,11 @@ import FinanceView from '../views/FinanceView.vue';
 import UsersView from '../views/UsersView.vue';
 import PermissionsView from '../views/PermissionsView.vue';
 import SettingsView from '../views/SettingsView.vue';
-import LoginView from '../views/LoginView.vue';
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/login',
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: LoginView,
-    meta: { requiresAuth: false, title: '登录' },
+    redirect: '/cashier',
   },
   {
     path: '/external',
@@ -91,16 +84,19 @@ const LAUNCH_TIME = new Date().toLocaleString('zh-CN', {
 }).replace(/\//g, '-');
 
 // 路由守卫
-router.beforeEach(async (to, _from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
   const settingsStore = useSettingsStore();
 
   // 1. 优先检查系统是否已初始化
-  const isBootstrapRequired = await authStore.bootstrapRequired();
-  if (isBootstrapRequired && to.name !== 'Login') {
-    next('/login');
-    return;
-  }
+  authStore.bootstrapRequired().then(required => {
+    if (required) {
+      // 如果需要初始化，且当前不是处于登录弹窗触发状态，则强制开启登录弹窗
+      if (!authStore.isLoginRequired) {
+          authStore.isLoginRequired = true;
+      }
+    }
+  });
   
   // 更新页面标题
   if (to.meta.title) {
@@ -108,20 +104,17 @@ router.beforeEach(async (to, _from, next) => {
     document.title = `${to.meta.title} - ${brand} - Smarticafe v${APP_VERSION} (${LAUNCH_TIME})`;
   }
 
-  // 如果是登录页，直接放行
-  if (to.name === 'Login') {
-    if (authStore.isAuthenticated) {
-      next('/cashier');
-    } else {
-      next();
-    }
+  // 如果页面不需要认证，直接放行
+  if (to.meta.requiresAuth === false) {
+    next();
     return;
   }
 
   // 检查是否已登录
   if (!authStore.isAuthenticated) {
     authStore.pendingRedirect = to.fullPath;
-    next('/login');
+    authStore.isLoginRequired = true;
+    next(false);
     return;
   }
 

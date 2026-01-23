@@ -24,7 +24,7 @@ pub struct AppState {
 }
 
 // API响应包装
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 struct ApiResponse<T> {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -322,6 +322,7 @@ async fn api_rpc_handler(
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
+
         _ => Err(ApiResponse::err(format!("unsupported_rpc_cmd: {}", cmd))),
     }
 }

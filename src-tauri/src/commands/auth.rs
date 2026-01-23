@@ -274,9 +274,10 @@ pub fn auth_bootstrap_admin(app: AppHandle, input: AuthBootstrapAdminInput) -> R
     let brand_name = input.brand_name.trim();
     let store_name = input.store_name.trim();
     
-    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES('brand_name', ?1)", [brand_name])
+    let now = now_ts()?;
+    conn.execute("INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('brand_name', ?1, ?2)", params![brand_name, now])
         .map_err(|e| format!("save brand_name: {e}"))?;
-    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES('store_name', ?1)", [store_name])
+    conn.execute("INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('store_name', ?1, ?2)", params![store_name, now])
         .map_err(|e| format!("save store_name: {e}"))?;
 
     let token = Uuid::new_v4().to_string();
@@ -652,9 +653,10 @@ pub fn auth_update_brand_settings(app: AppHandle, token: String, input: BrandSet
     let conn = open_db(&app)?;
     require_admin(&conn, &token)?;
 
-    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES('brand_name', ?1)", [input.brand_name.trim()])
+    let now = crate::db::now_ts()?;
+    conn.execute("INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('brand_name', ?1, ?2)", params![input.brand_name.trim(), now])
         .map_err(|e| format!("update brand_name: {e}"))?;
-    conn.execute("INSERT OR REPLACE INTO kv(k, v) VALUES('store_name', ?1)", [input.store_name.trim()])
+    conn.execute("INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('store_name', ?1, ?2)", params![input.store_name.trim(), now])
         .map_err(|e| format!("update store_name: {e}"))?;
 
     Ok(())

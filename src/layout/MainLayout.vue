@@ -386,7 +386,13 @@ const isQuickLoginOpen = ref(false);    // 已登录状态用
 
 // Open login panel based on auth state
 const openLoginPanel = () => {
-  router.push('/login');
+  if (authStore.isAuthenticated) {
+    // 已登录：显示快捷登录面板
+    isQuickLoginOpen.value = true;
+  } else {
+    // 未登录：显示标准登录面板
+    isStandardLoginOpen.value = true;
+  }
 };
 
 // Watch for auth changes
@@ -413,11 +419,10 @@ watch(() => authStore.isAuthenticated, async (val) => {
   }
 });
 
-// Redirect to login page instead of opening panel
+// Sync login panel state from auth store
 watch(() => authStore.isLoginRequired, (val) => {
   if (val) {
-    authStore.isLoginRequired = false;
-    router.push('/login');
+    openLoginPanel();
   }
 });
 
@@ -545,6 +550,23 @@ const handleNavClick = async (item: any) => {
 <template>
   <div class="h-screen w-screen flex flex-col bg-gray-50 text-gray-900 font-sans overflow-hidden selection:bg-brand-orange selection:text-white">
     
+    <!-- Auth Overlay Backdrop for unauthenticated users -->
+    <div v-if="!authStore.isAuthenticated" class="fixed inset-0 z-50 bg-slate-100/60 backdrop-blur-xl flex flex-col items-center justify-center p-8 overflow-hidden">
+        <div class="absolute inset-0 pointer-events-none opacity-20 shimmer grayscale"></div>
+        <div class="max-w-md w-full space-y-12 text-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            <div class="w-32 h-32 bg-linear-to-tr from-brand-orange to-orange-400 rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-orange-200/50 animate-bounce-slow">
+                <span class="text-6xl text-white font-black tracking-tighter">S</span>
+            </div>
+            <div class="space-y-4">
+                <h1 class="text-4xl font-black text-slate-900 tracking-tight">Smarticafe</h1>
+                <p class="text-slate-500 font-medium">请先完成身份验证以进入系统</p>
+            </div>
+            <ModernButton variant="primary" size="lg" icon="🔐" @click="openLoginPanel" class="px-12 py-6 rounded-3xl text-lg shadow-2xl shadow-orange-500/30">
+                立即登录 / 初始化
+            </ModernButton>
+        </div>
+    </div>
+
     <!-- ===== HEADER SECTION ===== -->
     <header class="header shrink-0 relative">
       <div class="header-inner flex items-center justify-between">
