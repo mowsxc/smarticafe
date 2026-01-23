@@ -61,16 +61,16 @@
                   <p class="step-subtitle">设置品牌信息与超级管理员账号</p>
                   <!-- 系统版本信息 -->
                   <div class="version-badge">
-                    <span class="version-label">Smarticafe</span>
+                    <span class="version-label-premium">SMARTICAFE</span>
                     <span class="version-divider">·</span>
-                    <span class="version-number">v2.0.0</span>
+                    <span class="version-number">V2.0.0</span>
                   </div>
                 </div>
 
-                <!-- Scrollable Form Container -->
-                <div ref="formScrollRef" class="step-body custom-scrollbar">
+                <!-- Scrollable Form Container (Scrollbar Hidden) -->
+                <div ref="formScrollRef" class="step-body hide-scrollbar">
                   <!-- 品牌设置 Section -->
-                  <div class="form-section" ref="brandSectionRef">
+                  <div class="form-section">
                     <div class="form-section-label" :class="{ 'is-focused': isBrandFocused }">
                       <div class="label-icon-wrap">
                         <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -158,16 +158,18 @@
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <!-- Action Button -->
-                <button @click="handleStep1" :disabled="!isValidStep1 || loading" class="btn-primary">
-                  <div v-if="loading" class="btn-spinner"></div>
-                  <span>{{ loading ? '正在处理...' : '下一步：云端设置' }}</span>
-                  <svg v-if="!loading" class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
+                  <!-- Action Button (Now part of the scroll flow) -->
+                  <div class="step-footer-inline">
+                    <button @click="handleStep1" :disabled="!isValidStep1 || loading" class="btn-primary">
+                      <div v-if="loading" class="btn-spinner"></div>
+                      <span>{{ loading ? '正在处理...' : '下一步：云端设置' }}</span>
+                      <svg v-if="!loading" class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- ===== STEP 2: Cloud Setup ===== -->
@@ -184,7 +186,7 @@
                 </div>
 
                 <!-- Form Body -->
-                <div class="step-body">
+                <div class="step-body hide-scrollbar">
                   <!-- Toggle Switch -->
                   <label class="cloud-toggle-card" :class="{ 'is-enabled': cloudForm.enabled }">
                     <div class="toggle-switch">
@@ -248,79 +250,85 @@
                     <p>云端同步已禁用</p>
                     <span>数据将仅保存在本地设备</span>
                   </div>
-                </div>
 
-                <!-- Action Buttons -->
-                <div class="btn-group">
-                  <button @click="handleCloudSkip" class="btn-secondary">
-                    {{ cloudForm.enabled ? '暂不启用' : '跳过配置' }}
-                  </button>
-                  <button @click="handleStep2" class="btn-primary" :disabled="cloudForm.enabled && (!cloudForm.url || !cloudForm.key)">
-                    <span>继续下一步</span>
-                    <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                  </button>
+                  <!-- Action Buttons (Inline) -->
+                  <div class="step-footer-inline">
+                    <div class="btn-group">
+                      <button @click="handleCloudSkip" class="btn-secondary">
+                        {{ cloudForm.enabled ? '暂不启用' : '跳过配置' }}
+                      </button>
+                      <button @click="handleStep2" class="btn-primary" :disabled="cloudForm.enabled && (!cloudForm.url || !cloudForm.key)">
+                        <span>继续下一步</span>
+                        <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <!-- ===== STEP 3: Complete ===== -->
-              <div v-else-if="step === 3" key="step3" class="step-content step-content--center">
-                <!-- Success Animation -->
-                <div class="success-badge">
-                  <div class="success-ring success-ring--outer"></div>
-                  <div class="success-ring success-ring--inner"></div>
-                  <div class="success-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </div>
-                  <div class="success-particles">
-                    <span v-for="i in 8" :key="i" class="particle" :style="{ '--i': i }"></span>
-                  </div>
-                </div>
-
-                <!-- Header -->
-                <div class="step-header">
-                  <h1 class="step-title step-title--success">配置完成！</h1>
-                  <p class="step-subtitle">系统已准备就绪，祝您生意兴隆 🎉</p>
-                </div>
-
-                <!-- Summary Card -->
-                <div class="summary-card">
-                  <div class="summary-row">
-                    <span class="summary-label">店铺信息</span>
-                    <div class="summary-value">
-                      <span class="brand-name">{{ form.brandName }}</span>
-                      <span class="divider">/</span>
-                      <span class="store-name">{{ form.storeName }}</span>
+              <div v-else-if="step === 3" key="step3" class="step-content">
+                <div class="step-body hide-scrollbar step-content--center">
+                  <!-- Success Animation -->
+                  <div class="success-badge">
+                    <div class="success-ring success-ring--outer"></div>
+                    <div class="success-ring success-ring--inner"></div>
+                    <div class="success-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </div>
+                    <div class="success-particles">
+                      <span v-for="i in 8" :key="i" class="particle" :style="{ '--i': i }"></span>
                     </div>
                   </div>
-                  <div class="summary-row">
-                    <span class="summary-label">管理员</span>
-                    <div class="summary-value">
-                      <span>{{ form.displayName }}</span>
-                      <span class="account-tag">@{{ form.pickName }}</span>
+
+                  <!-- Header -->
+                  <div class="step-header">
+                    <h1 class="step-title step-title--success">配置完成！</h1>
+                    <p class="step-subtitle">系统已准备就绪，祝您生意兴隆 🎉</p>
+                  </div>
+
+                  <!-- Summary Card -->
+                  <div class="summary-card">
+                    <div class="summary-row">
+                      <span class="summary-label">店铺信息</span>
+                      <div class="summary-value">
+                        <span class="brand-name">{{ form.brandName }}</span>
+                        <span class="divider">/</span>
+                        <span class="store-name">{{ form.storeName }}</span>
+                      </div>
+                    </div>
+                    <div class="summary-row">
+                      <span class="summary-label">管理员</span>
+                      <div class="summary-value">
+                        <span>{{ form.displayName }}</span>
+                        <span class="account-tag">@{{ form.pickName }}</span>
+                      </div>
+                    </div>
+                    <div class="summary-row">
+                      <span class="summary-label">云端服务</span>
+                      <div class="summary-value">
+                        <span class="status-indicator" :class="cloudForm.enabled ? 'status--online' : 'status--offline'">
+                          <span class="status-dot"></span>
+                          {{ cloudForm.enabled ? '已启用' : '未启用' }}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div class="summary-row">
-                    <span class="summary-label">云端服务</span>
-                    <div class="summary-value">
-                      <span class="status-indicator" :class="cloudForm.enabled ? 'status--online' : 'status--offline'">
-                        <span class="status-dot"></span>
-                        {{ cloudForm.enabled ? '已启用' : '未启用' }}
-                      </span>
-                    </div>
+
+                  <!-- Final Action -->
+                  <div class="step-footer-inline">
+                    <button @click="handleStep3" class="btn-primary btn-primary--success">
+                      <span>进入收银台</span>
+                      <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
                   </div>
                 </div>
-
-                <!-- Final Action -->
-                <button @click="handleStep3" class="btn-primary btn-primary--success">
-                  <span>进入收银台</span>
-                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
               </div>
             </Transition>
 
@@ -889,9 +897,30 @@ const handleStep3 = async () => {
   font-weight: 700;
 }
 
-.version-label {
-  color: var(--text-primary);
-  letter-spacing: 0.3px;
+.version-label-premium {
+  color: var(--brand-orange);
+  letter-spacing: 2.5px; /* 增加字间距，更有品牌感 */
+  font-weight: 900;
+  text-shadow: 0 0 15px rgba(255, 102, 51, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.version-label-premium::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  20% { left: 100%; }
+  100% { left: 100%; }
 }
 
 .version-divider {
@@ -899,7 +928,7 @@ const handleStep3 = async () => {
 }
 
 .version-number {
-  color: var(--brand-orange);
+  color: var(--text-tertiary);
   font-family: 'SF Mono', 'Monaco', monospace;
   letter-spacing: 0.5px;
 }
@@ -917,28 +946,20 @@ const handleStep3 = async () => {
   margin-right: -8px;
 }
 
-/* ===== Custom Scrollbar ===== */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+/* ===== Hide Scrollbar ===== */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 3px;
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(255, 102, 51, 0.3), rgba(255, 102, 51, 0.15));
-  border-radius: 3px;
-  transition: background 0.3s;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(255, 102, 51, 0.5), rgba(255, 102, 51, 0.3));
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:active {
-  background: var(--brand-orange);
+/* Inline Footer for seamless flow */
+.step-footer-inline {
+  margin-top: 12px;
+  padding-bottom: 24px; /* Ensure space at bottom */
 }
 
 /* ===== Form Styles ===== */
