@@ -49,7 +49,7 @@
             <!-- ===== STEP 1: System Init ===== -->
             <Transition name="step-slide" mode="out-in">
               <div v-if="step === 1" key="step1" class="step-content">
-                <!-- Header -->
+                <!-- Header with Version -->
                 <div class="step-header">
                   <div class="step-icon step-icon--orange">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -59,11 +59,18 @@
                   </div>
                   <h1 class="step-title">初始化系统</h1>
                   <p class="step-subtitle">设置品牌信息与超级管理员账号</p>
+                  <!-- 系统版本信息 -->
+                  <div class="version-badge">
+                    <span class="version-label">Smarticafe</span>
+                    <span class="version-divider">·</span>
+                    <span class="version-number">v2.0.0</span>
+                  </div>
                 </div>
 
-                <!-- Form Fields -->
-                <div class="step-body">
-                  <div class="form-section">
+                <!-- Scrollable Form Container -->
+                <div ref="formScrollRef" class="step-body custom-scrollbar">
+                  <!-- 品牌设置 Section -->
+                  <div class="form-section" ref="brandSectionRef">
                     <div class="form-section-label" :class="{ 'is-focused': isBrandFocused }">
                       <div class="label-icon-wrap">
                         <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -83,7 +90,7 @@
                           placeholder="如：创新意电竞"
                           class="field-input"
                           @focus="isBrandFocused = true"
-                          @blur="isBrandFocused = false"
+                          @blur="handleBrandBlur"
                         />
                       </div>
                       <div class="form-field">
@@ -94,7 +101,7 @@
                           placeholder="如：总店"
                           class="field-input"
                           @focus="isBrandFocused = true"
-                          @blur="isBrandFocused = false"
+                          @blur="handleStoreBlur"
                         />
                       </div>
                     </div>
@@ -102,7 +109,8 @@
 
                   <div class="form-divider"></div>
 
-                  <div class="form-section">
+                  <!-- 管理员账号 Section -->
+                  <div class="form-section" ref="adminSectionRef">
                     <div class="form-section-label" :class="{ 'is-focused': isAdminFocused }">
                       <div class="label-icon-wrap">
                         <svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -116,6 +124,7 @@
                     <div class="form-field">
                       <label class="field-label">显示名称</label>
                       <input 
+                        ref="displayNameInputRef"
                         v-model="form.displayName" 
                         type="text" 
                         placeholder="如：店长"
@@ -357,6 +366,54 @@ const errorMsg = ref('');
 // Form focus states for icon glow effects
 const isBrandFocused = ref(false);
 const isAdminFocused = ref(false);
+
+// Refs for auto-scroll functionality
+const formScrollRef = ref<HTMLDivElement | null>(null);
+const adminSectionRef = ref<HTMLDivElement | null>(null);
+const displayNameInputRef = ref<HTMLInputElement | null>(null);
+
+// Auto-scroll to admin section when brand fields are completed
+const scrollToAdminSection = () => {
+  if (!formScrollRef.value || !adminSectionRef.value) return;
+  
+  // Smooth scroll to admin section
+  adminSectionRef.value.scrollIntoView({ 
+    behavior: 'smooth', 
+    block: 'start'
+  });
+  
+  // Focus on first admin field after scroll
+  setTimeout(() => {
+    displayNameInputRef.value?.focus();
+  }, 400);
+};
+
+// Handle brand field blur - check if should auto-scroll
+const handleBrandBlur = () => {
+  isBrandFocused.value = false;
+  
+  // If both brand fields are filled, scroll to admin section
+  if (form.brandName && form.storeName) {
+    // Small delay to allow Tab navigation to work naturally
+    setTimeout(() => {
+      // Only scroll if no admin field is focused
+      if (!isAdminFocused.value && !form.displayName) {
+        scrollToAdminSection();
+      }
+    }, 150);
+  }
+};
+
+const handleStoreBlur = () => {
+  isBrandFocused.value = false;
+  
+  // If both brand fields are filled and store was just completed
+  if (form.brandName && form.storeName && !form.displayName) {
+    setTimeout(() => {
+      scrollToAdminSection();
+    }, 150);
+  }
+};
 
 // Step 1: System Init
 const form = reactive({
@@ -818,12 +875,70 @@ const handleStep3 = async () => {
   color: var(--text-secondary);
 }
 
-/* ===== Step Body ===== */
+/* ===== Version Badge ===== */
+.version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, rgba(255, 102, 51, 0.08), rgba(255, 102, 51, 0.04));
+  border: 1px solid rgba(255, 102, 51, 0.15);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.version-label {
+  color: var(--text-primary);
+  letter-spacing: 0.3px;
+}
+
+.version-divider {
+  color: var(--text-tertiary);
+}
+
+.version-number {
+  color: var(--brand-orange);
+  font-family: 'SF Mono', 'Monaco', monospace;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Step Body (Scrollable) ===== */
 .step-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 380px); /* 计算可用高度 */
+  padding-right: 8px;
+  margin-right: -8px;
+}
+
+/* ===== Custom Scrollbar ===== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255, 102, 51, 0.3), rgba(255, 102, 51, 0.15));
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(255, 102, 51, 0.5), rgba(255, 102, 51, 0.3));
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background: var(--brand-orange);
 }
 
 /* ===== Form Styles ===== */
@@ -1594,9 +1709,8 @@ const handleStep3 = async () => {
 /* Mobile Large (480px - 768px) */
 @media (max-width: 768px) {
   .setup-view {
-    padding: 12px;
+    padding: 16px;
     min-height: 100dvh;
-    overflow-y: auto; /* 确保可滚动 */
   }
   
   .setup-container {
@@ -1604,159 +1718,172 @@ const handleStep3 = async () => {
   }
   
   .setup-card {
-    padding: 20px 16px; /* 减少padding */
-    border-radius: 16px;
+    padding: 28px;
+    border-radius: 20px;
     min-height: auto;
-    max-height: calc(100dvh - 100px); /* 限制最大高度 */
-    overflow-y: auto; /* 内容可滚动 */
   }
   
   .stepper {
-    margin-bottom: 16px; /* 减少间距 */
+    margin-bottom: 24px;
     padding: 0;
   }
   
   .stepper-track {
-    top: 14px;
-    left: 36px;
-    right: 36px;
+    top: 16px;
+    left: 40px;
+    right: 40px;
     height: 2px;
   }
   
   .stepper-node-wrapper {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
   }
   
   .stepper-node-dot {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
     border-width: 1.5px;
   }
   
   .stepper-check {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
   
   .stepper-label {
-    font-size: 8px;
-    letter-spacing: 0.2px;
-    max-width: 56px;
+    font-size: 9px;
+    letter-spacing: 0.3px;
+    max-width: 60px;
     text-align: center;
-    line-height: 1.2;
+    line-height: 1.3;
   }
   
   .stepper-node {
-    gap: 6px;
+    gap: 8px;
   }
   
   .step-header {
     text-align: center;
-    margin-bottom: 12px; /* 减少间距 */
   }
   
   .step-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    margin-bottom: 8px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
   }
   
   .step-icon svg {
-    width: 22px;
-    height: 22px;
-  }
-  
-  .step-title {
-    font-size: 18px;
-    margin-bottom: 4px;
-  }
-  
-  .step-subtitle {
-    font-size: 12px;
-  }
-  
-  .step-body {
-    gap: 12px; /* 减少间距 */
-  }
-  
-  .step-content {
-    gap: 16px; /* 减少间距 */
-  }
-  
-  .form-section {
-    gap: 8px; /* 减少间距 */
-  }
-  
-  .form-section-label {
-    gap: 8px;
-    padding: 4px 0;
-    font-size: 10px;
-  }
-  
-  .label-icon-wrap {
     width: 24px;
     height: 24px;
   }
   
-  .label-icon {
-    width: 16px;
-    height: 16px;
+  .step-title {
+    font-size: 20px;
   }
   
-  /* 保持双列布局！宽度足够 */
+  .step-subtitle {
+    font-size: 13px;
+  }
+  
+  /* 移动端版本徽章 */
+  .version-badge {
+    margin-top: 8px;
+    padding: 4px 12px;
+    font-size: 10px;
+  }
+  
+  /* 关键：移动端step-body高度优化 */
+  .step-body {
+    gap: 16px;
+    max-height: none; /* 移除桌面端的max-height限制 */
+    overflow-y: visible;
+    flex: 1;
+    min-height: 0; /* 允许flex收缩 */
+  }
+  
+  /* 让整个setup-card可滚动而不是step-body */
+  .setup-card {
+    max-height: calc(100dvh - 120px); /* 留出步进器空间 */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .step-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  
+  .form-section {
+    gap: 12px;
+  }
+  
+  .form-section-label {
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 11px;
+  }
+  
+  .label-icon-wrap {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .label-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
   .form-row {
-    grid-template-columns: 1fr 1fr; /* 恢复双列 */
-    gap: 8px; /* 减少间隙 */
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .form-field {
-    gap: 2px;
+    gap: 4px;
   }
   
   .field-label {
-    font-size: 9px;
-    margin-left: 2px;
+    font-size: 10px;
   }
   
   .field-input {
-    height: 40px; /* 减少高度 */
-    font-size: 13px;
-    padding: 0 12px;
-    border-radius: 8px;
+    height: 44px;
+    font-size: 14px;
+    padding: 0 14px;
+    border-radius: 10px;
   }
   
   .form-divider {
-    margin: 2px 0;
+    margin: 4px 0;
   }
   
   .btn-primary {
-    height: 46px; /* 减少高度 */
-    padding: 0 20px;
-    font-size: 13px;
-    border-radius: 12px;
+    height: 52px;
+    padding: 0 24px;
+    font-size: 14px;
+    border-radius: 14px;
   }
   
   .btn-secondary {
-    height: 46px;
-    padding: 0 20px;
-    font-size: 13px;
-    border-radius: 12px;
+    height: 52px;
+    padding: 0 24px;
+    font-size: 14px;
+    border-radius: 14px;
   }
   
   .btn-group {
-    flex-direction: row; /* 保持横向 */
-    gap: 8px;
+    flex-direction: column-reverse;
+    gap: 10px;
   }
   
-  .btn-group .btn-secondary {
-    flex: 0 0 auto;
-  }
-  
+  .btn-group .btn-secondary,
   .btn-group .btn-primary {
-    flex: 1;
+    width: 100%;
   }
   
   /* Cloud Toggle */
@@ -1882,133 +2009,36 @@ const handleStep3 = async () => {
 /* Mobile Small (< 480px) */
 @media (max-width: 480px) {
   .setup-view {
-    padding: 8px;
+    padding: 12px;
   }
   
   .setup-card {
-    padding: 16px 14px;
-    border-radius: 14px;
-    max-height: calc(100dvh - 80px);
-  }
-  
-  .stepper {
-    margin-bottom: 12px;
+    padding: 24px 20px;
+    border-radius: 16px;
   }
   
   .stepper-track {
-    left: 28px;
-    right: 28px;
-    top: 12px;
-  }
-  
-  .stepper-node-wrapper {
-    width: 28px;
-    height: 28px;
-  }
-  
-  .stepper-node-dot {
-    width: 24px;
-    height: 24px;
-    font-size: 10px;
+    left: 32px;
+    right: 32px;
   }
   
   .stepper-label {
-    font-size: 7px;
-    max-width: 48px;
-  }
-  
-  .stepper-node {
-    gap: 4px;
-  }
-  
-  .step-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    margin-bottom: 6px;
-  }
-  
-  .step-icon svg {
-    width: 18px;
-    height: 18px;
+    font-size: 8px;
+    max-width: 50px;
   }
   
   .step-title {
-    font-size: 16px;
-    margin-bottom: 2px;
+    font-size: 18px;
   }
   
   .step-subtitle {
-    font-size: 11px;
-  }
-  
-  .step-header {
-    margin-bottom: 8px;
-  }
-  
-  .step-body {
-    gap: 10px;
-  }
-  
-  .step-content {
-    gap: 12px;
-  }
-  
-  .form-section {
-    gap: 6px;
-  }
-  
-  .form-section-label {
-    padding: 2px 0;
-    font-size: 9px;
-  }
-  
-  .label-icon-wrap {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .label-icon {
-    width: 14px;
-    height: 14px;
-  }
-  
-  /* 480px仍保持双列 */
-  .form-row {
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
-  
-  .form-field {
-    gap: 1px;
-  }
-  
-  .field-label {
-    font-size: 8px;
-    margin-left: 1px;
-  }
-  
-  .field-input {
-    height: 36px;
     font-size: 12px;
-    padding: 0 10px;
-    border-radius: 6px;
-  }
-  
-  .form-divider {
-    margin: 1px 0;
   }
   
   .btn-primary,
   .btn-secondary {
-    height: 42px;
-    font-size: 12px;
-    border-radius: 10px;
-    padding: 0 16px;
-  }
-  
-  .btn-group {
-    gap: 6px;
+    height: 48px;
+    font-size: 13px;
   }
 }
 
