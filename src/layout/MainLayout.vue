@@ -13,6 +13,7 @@ import StandardLoginPanel from '../components/StandardLoginPanel.vue';
 import QuickLoginPanel from '../components/QuickLoginPanel.vue';
 import LinkSettingsModal from '../components/LinkSettingsModal.vue';
 import ModernNotification from '../components/ui/ModernNotification.vue';
+import ModernButton from '../components/ui/ModernButton.vue';
 import { getSyncService } from '../services/supabase/client';
 
 // Custom Links

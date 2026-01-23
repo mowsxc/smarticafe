@@ -322,6 +322,26 @@ async fn api_rpc_handler(
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
+        "auth_get_brand_settings" => {
+            match crate::commands::auth::auth_get_brand_settings(state.app.clone()) {
+                Ok(v) => Ok(ApiResponse::ok(serde_json::to_value(v).unwrap())),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        "kv_get" => {
+             // kv_get takes a key string. we need to inspect _args to get it.
+             // Usually payload is { k: "key" } or just "key"? check tauri invoke usage.
+             // If frontend uses `tauriCmd('kv_get', { k: '...' })`, _args is that object.
+             // Let's assume input matches command arg.
+             let k = _args["k"].as_str().unwrap_or("").to_string();
+             if k.is_empty() {
+                 return Err(ApiResponse::err("missing_key".to_string()));
+             }
+             match crate::commands::kv::kv_get(state.app.clone(), k) {
+                Ok(v) => Ok(ApiResponse::ok(serde_json::to_value(v).unwrap())),
+                Err(e) => Err(ApiResponse::err(e)),
+             }
+        },
 
         _ => Err(ApiResponse::err(format!("unsupported_rpc_cmd: {}", cmd))),
     }
