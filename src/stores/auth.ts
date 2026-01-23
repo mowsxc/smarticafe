@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { getSyncService } from '../services/supabase/client';
-import { ACCOUNTS } from '../config/accounts';
-import type { ShareholderAccount } from '../config/accounts.example';
 import { tauriCmd } from '../utils/tauri';
 
 // Import enhanced sync service
@@ -29,6 +27,17 @@ type TauriAuthSession = {
   token: string;
 };
 
+type AuthPickList = {
+  employees: string[];
+  bosses: string[];
+};
+
+type BootstrapAdminInput = {
+  pick_name: string;
+  display_name: string;
+  password: string;
+};
+
 export const useAuthStore = defineStore('auth', () => {
   // Init from storage
   const storedUser = localStorage.getItem('auth_user');
@@ -42,21 +51,65 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('auth_user', JSON.stringify(user));
   };
 
-  // 员工免密登录
-  const employeeLogin = async (name: string) => {
-    let token: string | undefined;
+  const bootstrapRequired = async () => {
     try {
-      const session = await tauriCmd<TauriAuthSession>('auth_employee_login', { pick_name: name });
-      token = session?.token;
+      return await tauriCmd<boolean>('auth_bootstrap_required');
     } catch {
-      token = undefined;
+      return false;
+    }
+  };
+
+  const bootstrapAdmin = async (input: { pickName: string; displayName: string; password: string }) => {
+    const payload: BootstrapAdminInput = {
+      pick_name: String(input.pickName || '').trim(),
+      display_name: String(input.displayName || '').trim(),
+      password: String(input.password || '').trim(),
+    };
+    if (!payload.pick_name || !payload.display_name || !payload.password) {
+      throw new Error('请输入完整信息');
     }
 
+    const session = await tauriCmd<TauriAuthSession>('auth_bootstrap_admin', payload as any);
     const user: User = {
-      id: `emp_${name}`,
+      id: session?.account_id || `auth_${payload.pick_name}`,
+      username: payload.pick_name,
+      role: 'admin',
+      displayName: session?.name || payload.display_name,
+      token: session?.token,
+    };
+    currentUser.value = user;
+    saveToStorage(user);
+
+    try {
+      const syncService = getSyncService();
+      await syncService.enqueue({
+        table: 'auth_sessions',
+        operation: 'upsert',
+        data: {
+          user_id: user.id,
+          username: user.username,
+          role: user.role,
+          display_name: user.displayName,
+          login_at: new Date().toISOString(),
+          logout_at: null,
+        },
+      });
+      await syncService.sync();
+    } catch (error) {
+      console.error('Failed to sync login to Supabase:', error);
+    }
+  };
+
+  // 员工免密登录
+  const employeeLogin = async (name: string) => {
+    const session = await tauriCmd<TauriAuthSession>('auth_employee_login', { pick_name: name });
+    const token = session?.token;
+
+    const user: User = {
+      id: session?.account_id || `emp_${name}`,
       username: name,
       role: 'employee',
-      displayName: name,
+      displayName: session?.name || name,
       token,
     };
     currentUser.value = user;
@@ -84,26 +137,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const shareholderLogin = async (account: ShareholderAccount, password: string) => {
-    let token: string | undefined;
-    try {
-      const session = await tauriCmd<TauriAuthSession>('auth_login', {
-        input: {
-          pick_name: account.displayName,
-          password,
-        },
-      });
-      token = session?.token;
-    } catch {
-      token = undefined;
-    }
+  const authLogin = async (pickName: string, password: string) => {
+    const session = await tauriCmd<TauriAuthSession>('auth_login', {
+      input: {
+        pick_name: pickName,
+        password,
+      },
+    });
 
+    const role = (session?.role as User['role']) || 'boss';
     const user: User = {
-      id: `shareholder_${account.loginKey}`,
-      username: account.loginKey,
-      role: account.role,
-      displayName: account.displayName,
-      token,
+      id: session?.account_id || `auth_${pickName}`,
+      username: pickName,
+      role,
+      displayName: session?.name || pickName,
+      token: session?.token,
     };
     currentUser.value = user;
     saveToStorage(user);
@@ -158,9 +206,14 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   const fetchPickList = async () => {
-    const employees = ACCOUNTS.employees.map((e) => e.username);
-    const bosses = ACCOUNTS.shareholders.map((s) => s.displayName);
-    return { employees, bosses };
+    try {
+      const list = await tauriCmd<AuthPickList>('auth_pick_list');
+      const employees = Array.isArray(list?.employees) ? list.employees : [];
+      const bosses = Array.isArray(list?.bosses) ? list.bosses : [];
+      return { employees, bosses };
+    } catch {
+      return { employees: [], bosses: [] };
+    }
   };
 
   const login = async (pickName: string, password: string) => {
@@ -168,21 +221,32 @@ export const useAuthStore = defineStore('auth', () => {
     const pwd = String(password || '').trim();
     if (!name) throw new Error('请选择用户');
 
-    const employees = ACCOUNTS.employees.map((e) => e.username);
+    const { employees, bosses } = await fetchPickList();
     if (employees.includes(name)) {
-      await employeeLogin(name);
-      return;
+      try {
+        await employeeLogin(name);
+        return;
+      } catch (e: any) {
+        const msg = String(e?.message || '登录失败');
+        if (msg.includes('unauthorized')) throw new Error('未授权的员工账号');
+        throw new Error(msg);
+      }
     }
 
-    const shareholder = ACCOUNTS.shareholders.find((s) => s.displayName === name);
-    if (shareholder) {
+    if (bosses.includes(name)) {
       if (!pwd) throw new Error('请输入密码');
-      if (pwd !== shareholder.loginKey) throw new Error('密码错误');
-      await shareholderLogin(shareholder, pwd);
-      return;
+      try {
+        await authLogin(name, pwd);
+        return;
+      } catch (e: any) {
+        const msg = String(e?.message || '登录失败');
+        if (msg.startsWith('no_account:')) throw new Error('用户名不存在');
+        if (msg.includes('bad_password')) throw new Error('密码错误');
+        throw new Error(msg);
+      }
     }
 
-    throw new Error('不支持的用户');
+    throw new Error('用户名不存在');
   };
 
   // 获取角色显示的各种独立属性
@@ -241,6 +305,8 @@ export const useAuthStore = defineStore('auth', () => {
     fetchPickList,
     login,
     employeeLogin,
+    bootstrapRequired,
+    bootstrapAdmin,
     logout,
     userProfile,
     can,

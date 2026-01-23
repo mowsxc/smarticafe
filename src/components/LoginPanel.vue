@@ -129,7 +129,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
-import { ACCOUNTS } from '../config/accounts';
 
 interface Props {
   isOpen: boolean;
@@ -145,19 +144,24 @@ const emit = defineEmits<Emits>();
 
 const authStore = useAuthStore();
 
-const employees = ACCOUNTS.employees.map((e) => e.username);
-const shareholders = ACCOUNTS.shareholders.map((s) => s.displayName);
+const employees = ref<string[]>([]);
+const shareholders = ref<string[]>([]);
 
-const selectedAccount = ref(shareholders[0] || '');
+const selectedAccount = ref('');
 const password = ref('');
 const errorMessage = ref('');
 
 watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    password.value = '';
-    errorMessage.value = '';
-    selectedAccount.value = shareholders[0] || '';
-  }
+  if (!newVal) return;
+  password.value = '';
+  errorMessage.value = '';
+
+  (async () => {
+    const list = await authStore.fetchPickList();
+    employees.value = list.employees || [];
+    shareholders.value = list.bosses || [];
+    selectedAccount.value = shareholders.value[0] || '';
+  })();
 });
 
 const employeeLogin = async (name: string) => {

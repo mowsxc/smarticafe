@@ -21,41 +21,97 @@
           </div>
 
           <div class="px-10 pb-12 space-y-6">
-            <!-- Username Input -->
-            <div class="space-y-3">
-              <div class="flex items-center gap-4">
-                <div class="h-px flex-1 bg-gray-100"></div>
-                <div class="flex flex-col items-center">
-                  <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-none">标准登录</span>
-                  <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Standard Login</span>
+            <template v-if="bootstrapMode">
+              <div class="space-y-3">
+                <div class="flex items-center gap-4">
+                  <div class="h-px flex-1 bg-gray-100"></div>
+                  <div class="flex flex-col items-center">
+                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-none">首次初始化</span>
+                    <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Bootstrap Admin</span>
+                  </div>
+                  <div class="h-px flex-1 bg-gray-100"></div>
                 </div>
-                <div class="h-px flex-1 bg-gray-100"></div>
               </div>
 
-              <div class="relative group">
-                <div class="absolute -inset-2 bg-linear-to-r from-brand-orange/15 to-transparent rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000"></div>
-                <div class="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[26px] h-14 px-6 transition-all shadow-xl shadow-black/2 focus-within:shadow-2xl focus-within:shadow-orange-200/20">
-                  <div class="mr-4 text-gray-300 group-focus-within:text-brand-orange transition-colors">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
-                    </svg>
+              <div class="space-y-4">
+                <div class="relative group">
+                  <div class="absolute -inset-2 bg-linear-to-r from-brand-orange/15 to-transparent rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000"></div>
+                  <div class="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[26px] h-14 px-6 transition-all shadow-xl shadow-black/2 focus-within:shadow-2xl focus-within:shadow-orange-200/20">
+                    <input
+                      v-model="bootstrapPickName"
+                      type="text"
+                      placeholder="管理员登录名（例如：admin）"
+                      class="flex-1 bg-transparent border-none outline-none font-mono text-[14px] font-bold text-gray-700 placeholder:text-gray-300"
+                      @keyup.enter="handleBootstrap"
+                    />
                   </div>
-                  <input 
-                    v-model="username"
-                    type="text"
-                    placeholder="输入用户名"
-                    class="flex-1 bg-transparent border-none outline-none font-mono text-[14px] font-bold text-gray-700 placeholder:text-gray-300"
-                    @input="onUsernameInput"
-                    @keyup.enter="handleLogin"
-                  />
+                </div>
+
+                <div class="relative group">
+                  <div class="absolute -inset-2 bg-linear-to-r from-brand-orange/15 to-transparent rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000"></div>
+                  <div class="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[26px] h-14 px-6 transition-all shadow-xl shadow-black/2 focus-within:shadow-2xl focus-within:shadow-orange-200/20">
+                    <input
+                      v-model="bootstrapDisplayName"
+                      type="text"
+                      placeholder="显示名称（例如：超管）"
+                      class="flex-1 bg-transparent border-none outline-none font-mono text-[14px] font-bold text-gray-700 placeholder:text-gray-300"
+                      @keyup.enter="handleBootstrap"
+                    />
+                  </div>
+                </div>
+
+                <div class="relative group">
+                  <div class="absolute -inset-2 bg-linear-to-r from-brand-orange/15 to-transparent rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000"></div>
+                  <div class="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[26px] h-14 px-6 transition-all shadow-xl shadow-black/2 focus-within:shadow-2xl focus-within:shadow-orange-200/20">
+                    <input
+                      v-model="bootstrapPassword"
+                      type="password"
+                      placeholder="设置密码"
+                      class="flex-1 bg-transparent border-none outline-none font-mono text-[14px] font-bold text-gray-700 placeholder:text-gray-300"
+                      @keyup.enter="handleBootstrap"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
+
+            <template v-else>
+              <!-- Username Input -->
+              <div class="space-y-3">
+                <div class="flex items-center gap-4">
+                  <div class="h-px flex-1 bg-gray-100"></div>
+                  <div class="flex flex-col items-center">
+                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] leading-none">标准登录</span>
+                    <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Standard Login</span>
+                  </div>
+                  <div class="h-px flex-1 bg-gray-100"></div>
+                </div>
+
+                <div class="relative group">
+                  <div class="absolute -inset-2 bg-linear-to-r from-brand-orange/15 to-transparent rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000"></div>
+                  <div class="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[26px] h-14 px-6 transition-all shadow-xl shadow-black/2 focus-within:shadow-2xl focus-within:shadow-orange-200/20">
+                    <div class="mr-4 text-gray-300 group-focus-within:text-brand-orange transition-colors">
+                      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </svg>
+                    </div>
+                    <input 
+                      v-model="username"
+                      type="text"
+                      placeholder="输入用户名"
+                      class="flex-1 bg-transparent border-none outline-none font-mono text-[14px] font-bold text-gray-700 placeholder:text-gray-300"
+                      @input="onUsernameInput"
+                      @keyup.enter="handleLogin"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
 
             <!-- Password Input (shown when user is a shareholder) -->
             <Transition name="slide-up">
-              <div v-if="isShareholder" class="space-y-4">
+              <div v-if="!bootstrapMode && isShareholder" class="space-y-4">
                 <div class="relative group">
                   <div class="absolute -inset-2 bg-linear-to-r from-brand-orange/15 to-transparent rounded-[32px] blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000"></div>
                   <div class="relative flex items-center bg-white/60 backdrop-blur-2xl border border-white focus-within:border-brand-orange/40 focus-within:bg-white rounded-[26px] h-14 px-6 transition-all shadow-xl shadow-black/2 focus-within:shadow-2xl focus-within:shadow-orange-200/20">
@@ -80,7 +136,7 @@
             <!-- User Type Hint -->
             <div class="flex items-center justify-center gap-2">
               <Transition name="fade">
-                <span v-if="userHint" class="text-[11px]" :class="userHintClass">
+                <span v-if="!bootstrapMode && userHint" class="text-[11px]" :class="userHintClass">
                   {{ userHint }}
                 </span>
               </Transition>
@@ -105,11 +161,11 @@
                 取消
               </button>
               <button 
-                @click="handleLogin"
-                :disabled="!canLogin"
+                @click="bootstrapMode ? handleBootstrap() : handleLogin()"
+                :disabled="bootstrapMode ? (!bootstrapPickName.trim() || !bootstrapDisplayName.trim() || !bootstrapPassword.trim()) : !canLogin"
                 class="flex-1 h-12 rounded-2xl bg-brand-orange text-white font-bold text-[12px] shadow-lg shadow-orange-200/50 hover:shadow-xl hover:shadow-orange-300/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {{ isShareholder ? '验证并登录' : '免密登录' }}
+                {{ bootstrapMode ? '创建超管并进入系统' : (isShareholder ? '验证并登录' : '免密登录') }}
               </button>
             </div>
           </div>
@@ -126,9 +182,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
-import { ACCOUNTS } from '../config/accounts';
 
 interface Props {
   isOpen: boolean;
@@ -139,7 +194,6 @@ interface Emits {
   (e: 'login-success'): void;
 }
 
-defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 const authStore = useAuthStore();
@@ -149,17 +203,38 @@ const username = ref('');
 const password = ref('');
 const errorMessage = ref('');
 
-// Employee list (can login without password)
-const employees = ACCOUNTS.employees.map((e) => e.username);
+const employees = ref<string[]>([]);
+const bosses = ref<string[]>([]);
 
-// Shareholder list (need password)
-const shareholders = ACCOUNTS.shareholders.map((s) => s.displayName);
+const bootstrapMode = ref(false);
+const bootstrapPickName = ref('');
+const bootstrapDisplayName = ref('');
+const bootstrapPassword = ref('');
+
+const props = defineProps<Props>();
+
+watch(
+  () => props.isOpen,
+  async (val) => {
+    if (!val) return;
+    errorMessage.value = '';
+    password.value = '';
+
+    bootstrapMode.value = await authStore.bootstrapRequired();
+    if (!bootstrapMode.value) {
+      const list = await authStore.fetchPickList();
+      employees.value = list.employees || [];
+      bosses.value = list.bosses || [];
+    }
+  },
+  { immediate: true },
+);
 
 // Determine user type based on username
 const userType = computed(() => {
   const name = username.value.trim();
-  if (employees.includes(name)) return 'employee';
-  if (shareholders.includes(name)) return 'shareholder';
+  if (employees.value.includes(name)) return 'employee';
+  if (bosses.value.includes(name)) return 'shareholder';
   return 'unknown';
 });
 
@@ -173,8 +248,8 @@ const canLogin = computed(() => {
 const userHint = computed(() => {
   const name = username.value.trim();
   if (!name) return '';
-  if (employees.includes(name)) return '✓ 员工免密登录';
-  if (shareholders.includes(name)) return '🔒 股东需要密码';
+  if (employees.value.includes(name)) return '✓ 员工免密登录';
+  if (bosses.value.includes(name)) return '🔒 管理员/股东需要密码';
   return '? 用户名不存在';
 });
 
@@ -207,6 +282,29 @@ const handleLogin = async () => {
     emit('close');
   } catch (error: any) {
     errorMessage.value = error.message || '登录失败';
+  }
+};
+
+const handleBootstrap = async () => {
+  errorMessage.value = '';
+  try {
+    await authStore.bootstrapAdmin({
+      pickName: bootstrapPickName.value,
+      displayName: bootstrapDisplayName.value,
+      password: bootstrapPassword.value,
+    });
+    bootstrapPickName.value = '';
+    bootstrapDisplayName.value = '';
+    bootstrapPassword.value = '';
+    emit('login-success');
+    emit('close');
+  } catch (error: any) {
+    const msg = String(error?.message || '初始化失败');
+    if (msg.includes('already_initialized')) {
+      errorMessage.value = '系统已初始化，请返回登录';
+    } else {
+      errorMessage.value = msg;
+    }
   }
 };
 </script>

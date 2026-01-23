@@ -47,6 +47,13 @@ struct AuthSetPasswordInput {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+struct AuthBootstrapAdminInput {
+    pick_name: String,
+    display_name: String,
+    password: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct AuthPickList {
     employees: Vec<String>,
     bosses: Vec<String>,
@@ -1837,6 +1844,68 @@ fn auth_accounts_list(app: tauri::AppHandle, token: String) -> Result<Vec<AuthAc
 }
 
 #[tauri::command]
+fn auth_bootstrap_required(app: tauri::AppHandle) -> Result<bool, String> {
+    let conn = open_db(&app)?;
+    let exists: Option<String> = conn
+        .query_row(
+            "SELECT id FROM auth_accounts WHERE role = 'admin' AND is_active = 1 LIMIT 1",
+            [],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| format!("query auth_bootstrap_required: {e}"))?;
+    Ok(exists.is_none())
+}
+
+#[tauri::command]
+fn auth_bootstrap_admin(app: tauri::AppHandle, input: AuthBootstrapAdminInput) -> Result<AuthSession, String> {
+    let conn = open_db(&app)?;
+
+    let pick_name = input.pick_name.trim().to_string();
+    let display_name = input.display_name.trim().to_string();
+    let password = input.password.trim().to_string();
+    if pick_name.is_empty() || display_name.is_empty() || password.is_empty() {
+        return Err(String::from("invalid"));
+    }
+
+    let exists: Option<String> = conn
+        .query_row(
+            "SELECT id FROM auth_accounts WHERE role = 'admin' AND is_active = 1 LIMIT 1",
+            [],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| format!("query bootstrap exists: {e}"))?;
+    if exists.is_some() {
+        return Err(String::from("already_initialized"));
+    }
+
+    let now = now_ts()?;
+    let id = Uuid::new_v4().to_string();
+    let salt = Uuid::new_v4().to_string();
+    let hash = pass_hash(&salt, &password);
+    conn.execute(
+        "INSERT INTO auth_accounts(id, pick_name, pass_salt, pass_hash, role, identity, display_name, equity, is_active, created_at, updated_at)
+         VALUES(?1, ?2, ?3, ?4, 'admin', 'admin', ?5, 0, 1, ?6, ?7)",
+        params![id, pick_name, salt, hash, display_name, now, now],
+    )
+    .map_err(|e| format!("insert bootstrap admin: {e}"))?;
+
+    let token = Uuid::new_v4().to_string();
+    let mut map = auth_sessions().lock().map_err(|_| String::from("lock"))?;
+    map.insert(token.clone(), id.clone());
+
+    Ok(AuthSession {
+        account_id: id,
+        role: String::from("admin"),
+        identity: String::from("admin"),
+        name: display_name,
+        equity: 0.0,
+        token,
+    })
+}
+
+#[tauri::command]
 fn auth_set_password(app: tauri::AppHandle, input: AuthSetPasswordInput) -> Result<(), String> {
     let conn = open_db(&app)?;
     let token = input.token.trim().to_string();
@@ -3239,6 +3308,8 @@ pub fn run() {
             open_external_webview,
             auth_login,
             auth_employee_login,
+            auth_bootstrap_required,
+            auth_bootstrap_admin,
             auth_pick_list,
             auth_accounts_list,
             auth_set_password,

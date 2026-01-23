@@ -103,9 +103,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
-import { ACCOUNTS } from '../config/accounts';
 
 interface Props {
   isOpen: boolean;
@@ -126,18 +125,28 @@ const emit = defineEmits<Emits>();
 
 const authStore = useAuthStore();
 
-// Employees (can login directly)
-const employees = ACCOUNTS.employees.map((e) => e.username);
-
-const shareholders = ACCOUNTS.shareholders.map((s) => s.displayName);
+const employees = ref<string[]>([]);
+const shareholders = ref<string[]>([]);
 
 const errorMessage = ref('');
+
+watch(
+  () => props.isOpen,
+  async (val) => {
+    if (!val) return;
+    errorMessage.value = '';
+    const list = await authStore.fetchPickList();
+    employees.value = list.employees || [];
+    shareholders.value = list.bosses || [];
+  },
+  { immediate: true },
+);
 
 const handleLogin = async (name: string) => {
   errorMessage.value = '';
   
   try {
-    if (employees.includes(name)) {
+    if (employees.value.includes(name)) {
       // Employee: direct login
       if (props.mode === 'successor') {
         emit('select-successor', name);
@@ -145,7 +154,7 @@ const handleLogin = async (name: string) => {
         await authStore.employeeLogin(name);
         emit('login-success', name);
       }
-    } else if (shareholders.includes(name)) {
+    } else if (shareholders.value.includes(name)) {
       if (props.mode === 'successor') {
         emit('select-successor', name);
       } else {
