@@ -329,11 +329,8 @@ async fn api_rpc_handler(
             }
         },
         "kv_get" => {
-             // kv_get takes a key string. we need to inspect _args to get it.
-             // Usually payload is { k: "key" } or just "key"? check tauri invoke usage.
-             // If frontend uses `tauriCmd('kv_get', { k: '...' })`, _args is that object.
-             // Let's assume input matches command arg.
-             let k = _args["k"].as_str().unwrap_or("").to_string();
+             // kv_get takes a key string.
+             let k = _args["key"].as_str().unwrap_or("").to_string();
              if k.is_empty() {
                  return Err(ApiResponse::err("missing_key".to_string()));
              }

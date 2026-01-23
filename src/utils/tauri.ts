@@ -45,7 +45,7 @@ export async function tauriCmd<T>(cmd: string, args: Record<string, any> = {}): 
   else if (cmd === 'accounting_entries_create_from_shift') url = `http://${apiHost}:${apiPort}/api/finance/accounting`;
 
   // Get methods for list/fetch commands
-  if (['products_list', 'auth_pick_list', 'auth_bootstrap_required'].includes(cmd)) {
+  if (['products_list', 'auth_pick_list'].includes(cmd)) {
     method = 'GET';
   }
 
