@@ -407,13 +407,17 @@ onMounted(async () => {
   }
 });
 
-watch(() => form, (newVal) => {
-  tauriCmd('auth_save_setup_data', { key: 'basic', data: JSON.stringify(newVal) });
-}, { deep: true });
+// 核心逻辑：增加防抖，防止手机端请求过频
+let saveTimer: any = null;
+const debouncedSave = (key: string, data: any) => {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        tauriCmd('auth_save_setup_data', { key, data: JSON.stringify(data) }).catch(() => {});
+    }, 800); 
+};
 
-watch(() => cloudForm, (newVal) => {
-  tauriCmd('auth_save_setup_data', { key: 'cloud', data: JSON.stringify(newVal) });
-}, { deep: true });
+watch(() => form, (newVal) => debouncedSave('basic', newVal), { deep: true });
+watch(() => cloudForm, (newVal) => debouncedSave('cloud', newVal), { deep: true });
 
 const saveProgress = async (newStep: number) => {
   step.value = newStep;
