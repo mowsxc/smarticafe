@@ -39,6 +39,35 @@
           </div>
         </section>
 
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold">云数据库（Supabase）</h2>
+              <p class="mt-1 text-sm text-slate-500">开启后启用云端同步与实时协同；关闭则纯本地运行</p>
+            </div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Cloud</span>
+          </div>
+
+          <div class="mt-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <input id="cloud-enabled" v-model="cloudSettings.enabled" type="checkbox" class="h-4 w-4 accent-orange-500" />
+              <label for="cloud-enabled" class="text-sm text-slate-700">开启云数据库（Supabase）</label>
+            </div>
+
+            <div v-if="cloudSettings.enabled" class="grid gap-4 md:grid-cols-2">
+              <div class="md:col-span-2">
+                <label class="text-sm font-medium text-slate-700">Supabase URL</label>
+                <input v-model="cloudSettings.supabaseUrl" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="https://xxxx.supabase.co" />
+              </div>
+              <div class="md:col-span-2">
+                <label class="text-sm font-medium text-slate-700">Supabase Anon Key</label>
+                <input v-model="cloudSettings.supabaseAnonKey" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="sb_..." />
+              </div>
+              <p class="md:col-span-2 text-xs text-slate-500">提示：保存后需要重启应用或刷新页面让云连接按新配置初始化。</p>
+            </div>
+          </div>
+        </section>
+
         <section class="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
           <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex items-center justify-between">
@@ -273,7 +302,7 @@ const selectTheme = (themeId: string) => {
 const settingsStore = useSettingsStore();
 settingsStore.init();
 
-const { brandSettings, logoSettings, animationSettings } = storeToRefs(settingsStore);
+const { brandSettings, logoSettings, animationSettings, cloudSettings } = storeToRefs(settingsStore);
 const showPreview = computed(() => settingsStore.animationSettings.duration >= 0);
 const transitionTypes = [
   { value: 'ease', label: '平滑' },

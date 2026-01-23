@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { getSyncService } from '../services/supabase/client'
+import { tauriCmd } from '../utils/tauri'
 
 export type LogoStyle = 'normal' | 'led' | 'neon' | '3d'
 
@@ -36,6 +37,12 @@ export interface AnimationSettings {
   transitionType: 'ease' | 'linear' | 'cubic'
 }
 
+export interface CloudSettings {
+  enabled: boolean
+  supabaseUrl: string
+  supabaseAnonKey: string
+}
+
 export const useSettingsStore = defineStore('settings', () => {
   const brandSettings = ref<BrandSettings>({
     brandName: '创新意 电竞馆',
@@ -63,6 +70,12 @@ export const useSettingsStore = defineStore('settings', () => {
   const animationSettings = ref<AnimationSettings>({
     duration: 200,
     transitionType: 'ease',
+  })
+
+  const cloudSettings = ref<CloudSettings>({
+    enabled: false,
+    supabaseUrl: '',
+    supabaseAnonKey: '',
   })
 
   const initialized = ref(false)
@@ -119,6 +132,32 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     }
 
+    const savedCloud = localStorage.getItem('cloudSettings')
+    if (savedCloud) {
+      try {
+        cloudSettings.value = { ...cloudSettings.value, ...JSON.parse(savedCloud) }
+      } catch (error) {
+        console.warn('Failed to load cloud settings')
+      }
+    }
+
+    ;(async () => {
+      try {
+        const v = await tauriCmd<any>('kv_get', { key: 'settings.cloud' })
+        if (v && typeof v === 'object') {
+          cloudSettings.value = {
+            ...cloudSettings.value,
+            enabled: !!v.enabled,
+            supabaseUrl: String(v.supabaseUrl || ''),
+            supabaseAnonKey: String(v.supabaseAnonKey || ''),
+          }
+          localStorage.setItem('cloudSettings', JSON.stringify(cloudSettings.value))
+        }
+      } catch {
+        // ignore
+      }
+    })()
+
     applyAnimationDuration()
   }
 
@@ -138,6 +177,18 @@ export const useSettingsStore = defineStore('settings', () => {
     enqueueSetting('logo', logoSettings.value)
   }, { deep: true })
 
+  watch(cloudSettings, () => {
+    localStorage.setItem('cloudSettings', JSON.stringify(cloudSettings.value))
+    enqueueSetting('cloud', cloudSettings.value)
+    ;(async () => {
+      try {
+        await tauriCmd('kv_set', { key: 'settings.cloud', value: cloudSettings.value })
+      } catch {
+        // ignore
+      }
+    })()
+  }, { deep: true })
+
   const syncToCloud = async () => {
     const syncService = getSyncService()
     return await syncService.forceSync()
@@ -147,6 +198,7 @@ export const useSettingsStore = defineStore('settings', () => {
     brandSettings,
     logoSettings,
     animationSettings,
+    cloudSettings,
     init,
     syncToCloud,
   }
