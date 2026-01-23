@@ -87,7 +87,7 @@ const saveUser = async () => {
             id: form.id,
             display_name: form.displayName,
             equity: Number(form.equity),
-            proxy_host: form.proxyHost || null,
+            proxy_host: form.proxyHost || undefined,
             salary_base: Number(form.salaryBase),
             is_hidden: form.isHidden,
             profile: profileJson
@@ -100,9 +100,70 @@ const saveUser = async () => {
     }
 };
 
-// Simple Employee Edit (Simplified for now, focusing on Stakeholder)
+// 
+
+
+const inputClass = "w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-brand-orange/50 focus:bg-white focus:ring-4 focus:ring-brand-orange/10 transition-all font-medium text-gray-800";
+
+// Employee Management Logic
+const showEmployeeModal = ref(false);
+const employeeForm = reactive({
+    id: '',
+    name: '',
+    isActive: true,
+    sortOrder: 0
+});
+
+const openAddEmployee = () => {
+    employeeForm.id = '';
+    employeeForm.name = '';
+    employeeForm.isActive = true;
+    employeeForm.sortOrder = 0;
+    showEmployeeModal.value = true;
+};
+
 const openEditEmployee = (emp: any) => {
-    alert("目前主要开发股东档案功能，员工简易编辑功能稍后开放");
+    employeeForm.id = emp.id;
+    employeeForm.name = emp.name;
+    employeeForm.isActive = emp.is_active;
+    employeeForm.sortOrder = emp.sort_order || 0;
+    showEmployeeModal.value = true;
+};
+
+const saveEmployee = async () => {
+    try {
+        if (!employeeForm.name.trim()) {
+            alert("请输入员工姓名");
+            return;
+        }
+        
+        await tauriCmd('employee_upsert', {
+            token: authStore.currentUser?.token,
+            id: employeeForm.id || undefined,
+            name: employeeForm.name,
+            is_active: employeeForm.isActive,
+            sort_order: Number(employeeForm.sortOrder)
+        });
+        
+        showEmployeeModal.value = false;
+        await loadData();
+    } catch (e: any) {
+        alert('保存员工失败: ' + e.message);
+    }
+};
+
+const toggleEmployeeStatus = async (emp: any) => {
+    if (!confirm(`确定要${emp.is_active ? '停用' : '启用'}员工 ${emp.name} 吗？`)) return;
+    try {
+        await tauriCmd('employee_set_active', {
+            token: authStore.currentUser?.token,
+            id: emp.id,
+            is_active: !emp.is_active
+        });
+        await loadData();
+    } catch (e: any) {
+        alert("操作失败: " + e.message);
+    }
 };
 </script>
 
@@ -198,14 +259,77 @@ const openEditEmployee = (emp: any) => {
     </div>
 
     <!-- Staff Grid (Simplified) -->
-    <div v-if="activeTab === 'staff'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <div v-for="emp in employees" :key="emp.id" class="bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                 <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center font-bold">{{ emp.name.charAt(0) }}</div>
-                 <span class="font-bold text-gray-700">{{ emp.name }}</span>
+    <!-- Staff Grid -->
+    <div v-if="activeTab === 'staff'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4 overflow-y-auto">
+        <!-- Add New Button -->
+        <div @click="openAddEmployee" class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:border-brand-orange/40 hover:bg-orange-50 hover:text-brand-orange transition-all cursor-pointer min-h-[140px] group">
+             <div class="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+             </div>
+             <span class="font-bold text-sm">新增员工</span>
+             <span class="text-[10px] mt-1">(收银台操作员)</span>
+        </div>
+
+        <div v-for="emp in employees" :key="emp.id" class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col items-center relative group overflow-hidden">
+            <!-- Active Indicator -->
+            <div class="absolute top-3 right-3 w-2.5 h-2.5 rounded-full" :class="emp.is_active ? 'bg-green-500' : 'bg-gray-300'"></div>
+            
+            <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center font-black text-2xl mb-3 shadow-inner">
+                {{ emp.name.charAt(0) }}
             </div>
-            <span class="px-2 py-1 bg-green-100 text-green-600 text-[10px] font-bold rounded-lg" v-if="emp.is_active">在职</span>
-            <span class="px-2 py-1 bg-gray-100 text-gray-400 text-[10px] font-bold rounded-lg" v-else>离职</span>
+            
+            <h3 class="font-bold text-gray-800 text-lg mb-1">{{ emp.name }}</h3>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-md" :class="emp.is_active ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'">
+                {{ emp.is_active ? '在职 Active' : '已离职 Inactive' }}
+            </span>
+
+            <div class="mt-4 pt-4 border-t border-gray-50 w-full flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button @click="openEditEmployee(emp)" class="flex-1 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs transition-colors">
+                    编辑
+                </button>
+                <button @click="toggleEmployeeStatus(emp)" class="flex-1 py-2 rounded-lg hover:bg-red-50 text-xs font-bold transition-colors" :class="emp.is_active ? 'text-red-500' : 'text-green-600 hover:!bg-green-50'">
+                    {{ emp.is_active ? '停用' : '启用' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Employee Modal -->
+    <div v-if="showEmployeeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-[400px] animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-black text-gray-900 text-lg">{{ employeeForm.id ? '编辑员工' : '新增员工' }}</h3>
+                <button @click="showEmployeeModal = false" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors">✕</button>
+            </div>
+            
+            <div class="p-8 space-y-6">
+                 <div class="space-y-2">
+                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">员工姓名</label>
+                     <input v-model="employeeForm.name" type="text" placeholder="请输入真实姓名" :class="inputClass" class="!bg-white" />
+                 </div>
+                 
+                 <div class="space-y-2">
+                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">排序权重 (0-99)</label>
+                     <input v-model="employeeForm.sortOrder" type="number" :class="inputClass" class="!bg-white" />
+                     <p class="text-[10px] text-gray-400">数字越小，在登录列表越靠前</p>
+                 </div>
+
+                 <div class="space-y-2">
+                     <label class="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                         <input type="checkbox" v-model="employeeForm.isActive" class="w-5 h-5 rounded border-gray-300 text-brand-orange focus:ring-brand-orange">
+                         <div>
+                             <span class="block font-bold text-sm text-gray-700">在职状态</span>
+                             <span class="block text-[10px] text-gray-400">只有在职员工才会出现在交接班列表中</span>
+                         </div>
+                     </label>
+                 </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-100 bg-gray-50/50">
+                <button @click="saveEmployee" class="w-full h-12 bg-black text-white font-bold rounded-xl shadow-lg hover:bg-gray-800 active:scale-95 transition-all">
+                    {{ employeeForm.id ? '保存修改' : '立即创建' }}
+                </button>
+            </div>
         </div>
     </div>
     
@@ -229,11 +353,11 @@ const openEditEmployee = (emp: any) => {
                     <div class="grid grid-cols-2 gap-6">
                         <div class="space-y-2">
                             <label class="text-sm font-bold text-gray-700">股权比例 (%)</label>
-                            <input v-model="form.equity" type="number" step="0.1" class="input-field" />
+                            <input v-model="form.equity" type="number" step="0.1" :class="inputClass" />
                         </div>
                          <div class="space-y-2">
                             <label class="text-sm font-bold text-gray-700">基本薪资 (元)</label>
-                            <input v-model="form.salaryBase" type="number" step="100" class="input-field" />
+                            <input v-model="form.salaryBase" type="number" step="100" :class="inputClass" />
                         </div>
                     </div>
                 </div>
@@ -244,7 +368,7 @@ const openEditEmployee = (emp: any) => {
                     <div class="grid grid-cols-2 gap-6">
                          <div class="space-y-2">
                              <label class="text-sm font-bold text-gray-700">代持宿主 (挂靠在谁名下)</label>
-                             <select v-model="form.proxyHost" class="input-field">
+                             <select v-model="form.proxyHost" :class="inputClass">
                                  <option value="">-- 无代持 --</option>
                                  <option v-for="host in proxyHosts" :key="host.value" :value="host.value">
                                      {{ host.label }}
@@ -269,22 +393,22 @@ const openEditEmployee = (emp: any) => {
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-1">
                             <label class="text-xs font-bold text-gray-500">身份证号</label>
-                            <input v-model="form.idCard" type="text" class="input-field !h-10 text-sm" />
+                            <input v-model="form.idCard" type="text" :class="[inputClass, '!h-10 text-sm']" />
                         </div>
                         <div class="space-y-1">
                              <label class="text-xs font-bold text-gray-500">联系电话</label>
-                             <input v-model="form.phone" type="text" class="input-field !h-10 text-sm" />
+                             <input v-model="form.phone" type="text" :class="[inputClass, '!h-10 text-sm']" />
                         </div>
                         <div class="col-span-2 space-y-1">
                              <label class="text-xs font-bold text-gray-500">银行卡号</label>
                              <div class="flex gap-2">
-                                 <input v-model="form.bankName" type="text" placeholder="开户行" class="input-field !h-10 text-sm w-1/3" />
-                                 <input v-model="form.bankCard" type="text" placeholder="卡号" class="input-field !h-10 text-sm flex-1 font-mono" />
+                                 <input v-model="form.bankName" type="text" placeholder="开户行" :class="[inputClass, '!h-10 text-sm w-1/3']" />
+                                 <input v-model="form.bankCard" type="text" placeholder="卡号" :class="[inputClass, '!h-10 text-sm flex-1 font-mono']" />
                              </div>
                         </div>
                          <div class="col-span-2 space-y-1">
                              <label class="text-xs font-bold text-gray-500">紧急联系人</label>
-                             <input v-model="form.emergencyContact" type="text" class="input-field !h-10 text-sm" />
+                             <input v-model="form.emergencyContact" type="text" :class="[inputClass, '!h-10 text-sm']" />
                         </div>
                     </div>
                 </div>
@@ -299,8 +423,7 @@ const openEditEmployee = (emp: any) => {
   </div>
 </template>
 
+
 <style scoped>
-.input-field {
-    @apply w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-brand-orange/50 focus:bg-white focus:ring-4 focus:ring-brand-orange/10 transition-all font-medium text-gray-800;
-}
+/* Inline styles used for compatibility */
 </style>

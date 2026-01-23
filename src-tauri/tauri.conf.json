@@ -26,12 +26,13 @@
         "label": "splashscreen",
         "title": "Starting...",
         "url": "splash.html",
-        "width": 340,
-        "height": 420,
+        "width": 300,
+        "height": 400,
         "decorations": false,
         "center": true,
         "resizable": false,
-        "visible": true
+        "visible": true,
+        "transparent": false
       }
     ],
     "security": {

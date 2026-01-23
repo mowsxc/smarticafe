@@ -16,6 +16,29 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            // 🔒 强制隐藏主窗口（防止"双层叠加"）
+            use tauri::Manager;
+            if let Some(main_window) = app.get_webview_window("main") {
+                let _ = main_window.hide();
+            }
+
+            // ⏰ 兜底：5秒后强制关闭Splash，防止前端崩溃导致卡死
+            let app_handle_clone = app.handle().clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(5000));
+                use tauri::Manager;
+                if let Some(splash) = app_handle_clone.get_webview_window("splashscreen") {
+                    // 如果它还开着，就关了它
+                    if splash.is_visible().unwrap_or(false) {
+                        let _ = splash.close();
+                        if let Some(main) = app_handle_clone.get_webview_window("main") {
+                            let _ = main.show();
+                            let _ = main.set_focus();
+                        }
+                    }
+                }
+            });
+
             // 启动HTTP API服务器
             let app_handle = app.handle().clone();
             std::thread::spawn(move || {

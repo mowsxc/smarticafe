@@ -6,13 +6,13 @@ Write-Host "🚀 Starting Build Process for Smarticafe v$VERSION..." -Foreground
 
 # 2. Build Frontend
 Write-Host "📦 Building Frontend..." -ForegroundColor Yellow
-Start-Process npm -ArgumentList "run", "build" -Wait -NoNewWindow
-if ($LastExitCode -ne 0) { throw "Frontend build failed" }
+cmd /c "npm run build"
+if ($LASTEXITCODE -ne 0) { throw "Frontend build failed with code $LASTEXITCODE" }
 
 # 3. Build Tauri App
 Write-Host "🦀 Building Tauri Application..." -ForegroundColor Yellow
-Start-Process npm -ArgumentList "run", "tauri", "build" -Wait -NoNewWindow
-if ($LastExitCode -ne 0) { throw "Tauri build failed" }
+cmd /c "npm run tauri build"
+if ($LASTEXITCODE -ne 0) { throw "Tauri build failed with code $LASTEXITCODE" }
 
 # 4. Prepare Output Directory
 $DesktopPath = [Environment]::GetFolderPath("Desktop")

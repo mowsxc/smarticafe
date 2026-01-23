@@ -1,153 +1,314 @@
 <template>
-  <div class="min-h-screen w-full flex items-center justify-center bg-[#f8f9fa] p-6 relative overflow-hidden">
-      <!-- Background Elements -->
-      <div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-brand-orange/5 rounded-full blur-3xl"></div>
-      <div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-3xl"></div>
+  <div class="setup-view min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden">
+      <!-- ===== Ambient Background Effects ===== -->
+      <div class="ambient-layer">
+        <div class="ambient-orb ambient-orb--primary"></div>
+        <div class="ambient-orb ambient-orb--secondary"></div>
+        <div class="ambient-orb ambient-orb--accent"></div>
+      </div>
+      
+      <!-- Pattern Grid -->
+      <div class="pattern-grid"></div>
 
-      <div class="w-full max-w-[500px] z-10 transition-all duration-500">
+      <!-- ===== Main Container ===== -->
+      <div class="setup-container w-full max-w-[540px] z-10">
           
-          <!-- Progress Header -->
-          <div class="mb-8 flex items-center justify-between px-8 relative">
-              <!-- Connecting Line -->
-              <div class="absolute left-10 right-10 top-5 h-0.5 bg-gray-200 -z-10"></div>
-              <div class="absolute left-10 right-10 top-5 h-0.5 bg-brand-orange -z-10 transition-all duration-500 origin-left scale-x-0" :style="{ transform: `scaleX(${(step - 1) / 2})` }"></div>
-
-              <div v-for="i in 3" :key="i" class="flex flex-col items-center gap-2 bg-[#f8f9fa] z-10 px-2">
-                  <div 
-                    class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-500 border-2"
-                    :class="step >= i ? 'bg-brand-orange border-brand-orange text-white shadow-lg shadow-orange-200' : 'bg-white border-gray-200 text-gray-400'"
-                  >
-                      {{ i }}
-                  </div>
-                  <span class="text-[10px] font-medium uppercase tracking-wider transition-colors" :class="step >= i ? 'text-brand-orange' : 'text-gray-400'">{{ ['账号', '云端', '完成'][i-1] }}</span>
+          <!-- ===== Progress Stepper ===== -->
+          <div class="stepper mb-10 px-4">
+            <div class="stepper-track">
+              <div class="stepper-track-fill" :style="{ width: `${((step - 1) / 2) * 100}%` }"></div>
+            </div>
+            <div class="stepper-nodes">
+              <div 
+                v-for="i in 3" 
+                :key="i" 
+                class="stepper-node"
+                :class="{ 'is-active': step >= i, 'is-current': step === i }"
+              >
+                <div class="stepper-node-ring"></div>
+                <div class="stepper-node-dot">
+                  <svg v-if="step > i" class="stepper-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span v-else class="stepper-number">{{ i }}</span>
+                </div>
+                <span class="stepper-label">{{ ['账号配置', '云端同步', '完成启动'][i-1] }}</span>
               </div>
+            </div>
           </div>
 
-          <!-- Card -->
-          <div class="bg-white/90 backdrop-blur-xl rounded-[40px] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] border border-white/50 p-10 relative overflow-hidden min-h-[500px] flex flex-col">
-              
-              <!-- STEP 1: System Init -->
-              <div v-if="step === 1" class="flex-1 flex flex-col space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
-                  <div class="text-center space-y-2">
-                      <h1 class="text-2xl font-black text-gray-900 tracking-tight">初始化系统</h1>
-                      <p class="text-gray-500 text-sm">创建超级管理员与品牌信息</p>
+          <!-- ===== Main Card ===== -->
+          <div class="setup-card">
+            <!-- Card Glow Effects -->
+            <div class="card-glow"></div>
+            <div class="card-shimmer"></div>
+            
+            <!-- ===== STEP 1: System Init ===== -->
+            <Transition name="step-slide" mode="out-in">
+              <div v-if="step === 1" key="step1" class="step-content">
+                <!-- Header -->
+                <div class="step-header">
+                  <div class="step-icon step-icon--orange">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
                   </div>
+                  <h1 class="step-title">初始化系统</h1>
+                  <p class="step-subtitle">设置品牌信息与超级管理员账号</p>
+                </div>
 
-                  <div class="space-y-5 flex-1">
-                      <div class="grid grid-cols-2 gap-4">
-                          <input v-model="form.brandName" type="text" placeholder="品牌名称 (MyCafe)" class="setup-input" />
-                          <input v-model="form.storeName" type="text" placeholder="门店名称 (HQ)" class="setup-input" />
+                <!-- Form Fields -->
+                <div class="step-body">
+                  <div class="form-section">
+                    <div class="form-section-label">
+                      <span class="label-icon">🏪</span>
+                      <span>品牌设置</span>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-field">
+                        <label class="field-label">品牌名称</label>
+                        <input 
+                          v-model="form.brandName" 
+                          type="text" 
+                          placeholder="如：创新意电竞"
+                          class="field-input"
+                        />
                       </div>
-                      <div class="h-px bg-gray-100 my-2"></div>
-                      <input v-model="form.displayName" type="text" placeholder="您的姓名 (如: 店长)" class="setup-input" />
-                      <input v-model="form.pickName" type="text" placeholder="登录账号 (如: admin)" class="setup-input" />
-                      <input v-model="form.password" type="password" placeholder="登录密码" class="setup-input" />
+                      <div class="form-field">
+                        <label class="field-label">门店名称</label>
+                        <input 
+                          v-model="form.storeName" 
+                          type="text" 
+                          placeholder="如：总店"
+                          class="field-input"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                   <button @click="handleStep1" :disabled="!isValidStep1 || loading" class="setup-btn">
-                      <div v-if="loading" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                      {{ loading ? '处理中...' : '下一步: 云服务配置' }}
-                   </button>
+                  <div class="form-divider"></div>
+
+                  <div class="form-section">
+                    <div class="form-section-label">
+                      <span class="label-icon">👤</span>
+                      <span>管理员账号</span>
+                    </div>
+                    <div class="form-field">
+                      <label class="field-label">显示名称</label>
+                      <input 
+                        v-model="form.displayName" 
+                        type="text" 
+                        placeholder="如：店长"
+                        class="field-input"
+                      />
+                    </div>
+                    <div class="form-row">
+                      <div class="form-field">
+                        <label class="field-label">登录账号</label>
+                        <input 
+                          v-model="form.pickName" 
+                          type="text" 
+                          placeholder="如：admin"
+                          class="field-input"
+                        />
+                      </div>
+                      <div class="form-field">
+                        <label class="field-label">登录密码</label>
+                        <input 
+                          v-model="form.password" 
+                          type="password" 
+                          placeholder="••••••"
+                          class="field-input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Button -->
+                <button @click="handleStep1" :disabled="!isValidStep1 || loading" class="btn-primary">
+                  <div v-if="loading" class="btn-spinner"></div>
+                  <span>{{ loading ? '正在处理...' : '下一步：云端设置' }}</span>
+                  <svg v-if="!loading" class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
               </div>
 
-              <!-- STEP 2: Cloud Setup -->
-              <div v-if="step === 2" class="flex-1 flex flex-col space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
-                  <div class="text-center space-y-2">
-                      <h1 class="text-2xl font-black text-gray-900 tracking-tight">云端同步</h1>
-                      <p class="text-gray-500 text-sm">连接 Supabase 实现多端数据互通</p>
+              <!-- ===== STEP 2: Cloud Setup ===== -->
+              <div v-else-if="step === 2" key="step2" class="step-content">
+                <!-- Header -->
+                <div class="step-header">
+                  <div class="step-icon step-icon--blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                    </svg>
                   </div>
+                  <h1 class="step-title">云端同步</h1>
+                  <p class="step-subtitle">连接 Supabase 实现多端数据互通</p>
+                </div>
 
-                  <div class="space-y-6 flex-1">
-                      <label class="flex items-center gap-4 p-5 border border-gray-100 rounded-2xl bg-gray-50/50 hover:bg-white hover:border-brand-orange/30 hover:shadow-md transition-all cursor-pointer group">
-                          <div class="relative flex items-center">
-                              <input type="checkbox" v-model="cloudForm.enabled" class="peer sr-only">
-                              <div class="w-12 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-brand-orange shadow-inner"></div>
-                          </div>
-                          <div class="flex flex-col">
-                              <span class="font-bold text-gray-700 group-hover:text-brand-orange transition-colors">启用云同步服务</span>
-                              <span class="text-[10px] text-gray-400">开启后可远程管理店铺数据</span>
-                          </div>
-                      </label>
-
-                      <div v-if="cloudForm.enabled" class="space-y-4 pt-2 animate-in slide-in-from-top-2 fade-in">
-                          <div class="space-y-1">
-                              <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Project URL</label>
-                              <input v-model="cloudForm.url" type="text" placeholder="https://xxx.supabase.co" class="setup-input text-xs font-mono" />
-                          </div>
-                          <div class="space-y-1">
-                              <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Anon Key</label>
-                              <input v-model="cloudForm.key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="setup-input text-xs font-mono" />
-                          </div>
-                          
-                          <!-- Test Connection Button (Fake for now) -->
-                          <div class="flex justify-end">
-                              <button class="text-[11px] font-bold text-brand-orange hover:text-orange-600 underline">测试连接</button>
-                          </div>
+                <!-- Form Body -->
+                <div class="step-body">
+                  <!-- Toggle Switch -->
+                  <label class="cloud-toggle-card" :class="{ 'is-enabled': cloudForm.enabled }">
+                    <div class="toggle-switch">
+                      <input type="checkbox" v-model="cloudForm.enabled" class="toggle-input">
+                      <div class="toggle-track">
+                        <div class="toggle-thumb"></div>
                       </div>
-                      
-                      <div v-else class="flex flex-col items-center justify-center p-8 text-gray-400 opacity-50 space-y-3">
-                           <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
-                           <p class="text-xs">云端同步已禁用，数据将仅保存在本地</p>
-                      </div>
-                  </div>
+                    </div>
+                    <div class="toggle-content">
+                      <span class="toggle-title">启用云同步服务</span>
+                      <span class="toggle-desc">开启后可远程管理店铺数据，支持多设备协同</span>
+                    </div>
+                    <div class="toggle-badge" :class="cloudForm.enabled ? 'badge--on' : 'badge--off'">
+                      {{ cloudForm.enabled ? '已开启' : '已关闭' }}
+                    </div>
+                  </label>
 
-                  <div class="flex gap-3">
-                       <button @click="handleCloudSkip" class="setup-btn bg-gray-100 !text-gray-500 hover:bg-gray-200">
-                           {{ cloudForm.enabled ? '暂不启用' : '跳过配置' }}
-                       </button>
-                       <button @click="handleStep2" class="setup-btn" :disabled="cloudForm.enabled && (!cloudForm.url || !cloudForm.key)">
-                           继续下一步
-                       </button>
-                  </div>
-              </div>
-
-              <!-- STEP 3: Finish -->
-              <div v-if="step === 3" class="flex-1 flex flex-col space-y-8 animate-in fade-in slide-in-from-right-8 duration-500 text-center">
-                  <div class="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full mx-auto flex items-center justify-center mb-2 shadow-xl shadow-emerald-100 animate-bounce-slow">
-                     <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                  </div>
-                  
-                  <div class="text-center space-y-2">
-                      <h1 class="text-2xl font-black text-gray-900 tracking-tight">配置完成!</h1>
-                      <p class="text-gray-500 text-sm">系统已准备就绪，祝您生意兴隆</p>
-                  </div>
-
-                  <div class="bg-gradient-to-br from-orange-50 to-white border border-orange-100 p-6 rounded-2xl text-left space-y-4 shadow-sm">
-                      <div class="flex items-center justify-between pb-3 border-b border-orange-100/50">
-                          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">店铺信息</span>
-                          <span class="font-bold text-gray-800">{{ form.brandName }} <span class="text-gray-400 mx-1">/</span> {{ form.storeName }}</span>
+                  <!-- Cloud Config Fields -->
+                  <Transition name="expand">
+                    <div v-if="cloudForm.enabled" class="cloud-config">
+                      <div class="form-field">
+                        <label class="field-label">Project URL</label>
+                        <input 
+                          v-model="cloudForm.url" 
+                          type="text" 
+                          placeholder="https://xxx.supabase.co"
+                          class="field-input field-input--mono"
+                        />
                       </div>
-                      <div class="flex items-center justify-between pb-3 border-b border-orange-100/50">
-                          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">管理员</span>
-                          <span class="font-bold text-gray-800">{{ form.displayName }} <span class="text-gray-400 text-[10px] bg-gray-100 px-1.5 py-0.5 rounded ml-1">{{ form.pickName }}</span></span>
+                      <div class="form-field">
+                        <label class="field-label">Anon Key</label>
+                        <input 
+                          v-model="cloudForm.key" 
+                          type="password" 
+                          placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                          class="field-input field-input--mono"
+                        />
                       </div>
-                      <div class="flex items-center justify-between">
-                          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">云端服务</span>
-                          <div class="flex items-center gap-1.5">
-                              <div class="w-2 h-2 rounded-full" :class="cloudForm.enabled ? 'bg-emerald-500' : 'bg-gray-300'"></div>
-                              <span class="font-bold" :class="cloudForm.enabled ? 'text-emerald-600' : 'text-gray-500'">{{ cloudForm.enabled ? '已启用' : '未启用' }}</span>
-                          </div>
-                      </div>
-                  </div>
-                  
-                  <div class="flex-1"></div>
+                      <button class="btn-link" @click="testConnection">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="23 4 23 10 17 10"/>
+                          <polyline points="1 20 1 14 7 14"/>
+                          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        测试连接
+                      </button>
+                    </div>
+                  </Transition>
 
-                  <button @click="handleStep3" class="setup-btn bg-emerald-500 shadow-emerald-200 hover:shadow-emerald-300 hover:bg-emerald-600 text-white">
-                      进入收银台
+                  <!-- Disabled State Visual -->
+                  <div v-if="!cloudForm.enabled" class="cloud-disabled">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+                      <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+                      <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+                      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+                      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                      <line x1="12" y1="20" x2="12.01" y2="20"/>
+                    </svg>
+                    <p>云端同步已禁用</p>
+                    <span>数据将仅保存在本地设备</span>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="btn-group">
+                  <button @click="handleCloudSkip" class="btn-secondary">
+                    {{ cloudForm.enabled ? '暂不启用' : '跳过配置' }}
                   </button>
+                  <button @click="handleStep2" class="btn-primary" :disabled="cloudForm.enabled && (!cloudForm.url || !cloudForm.key)">
+                    <span>继续下一步</span>
+                    <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
               </div>
 
-              <!-- Error Message -->
-              <div v-if="errorMsg" class="absolute bottom-4 left-0 right-0 mx-auto w-max max-w-[80%] p-3 bg-red-50 text-red-500 text-xs rounded-xl text-center font-bold border border-red-100 shadow-lg animate-in slide-in-from-bottom-2 fade-in">
-                  {{ errorMsg }}
-              </div>
+              <!-- ===== STEP 3: Complete ===== -->
+              <div v-else-if="step === 3" key="step3" class="step-content step-content--center">
+                <!-- Success Animation -->
+                <div class="success-badge">
+                  <div class="success-ring success-ring--outer"></div>
+                  <div class="success-ring success-ring--inner"></div>
+                  <div class="success-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <div class="success-particles">
+                    <span v-for="i in 8" :key="i" class="particle" :style="{ '--i': i }"></span>
+                  </div>
+                </div>
 
-               <!-- Debug Tool -->
-              <div class="absolute top-2 left-2 opacity-10 hover:opacity-100 transition-opacity flex gap-2">
-                 <button @click="injectTest" class="text-[10px] text-gray-500 hover:text-red-500 font-mono border border-gray-200 p-1 rounded">⚠️ Inject Test Data</button>
-                 <button @click="simulateTraffic" class="text-[10px] text-gray-500 hover:text-blue-500 font-mono border border-gray-200 p-1 rounded">⚡ Simulate Rush</button>
-              </div>
+                <!-- Header -->
+                <div class="step-header">
+                  <h1 class="step-title step-title--success">配置完成！</h1>
+                  <p class="step-subtitle">系统已准备就绪，祝您生意兴隆 🎉</p>
+                </div>
 
+                <!-- Summary Card -->
+                <div class="summary-card">
+                  <div class="summary-row">
+                    <span class="summary-label">店铺信息</span>
+                    <div class="summary-value">
+                      <span class="brand-name">{{ form.brandName }}</span>
+                      <span class="divider">/</span>
+                      <span class="store-name">{{ form.storeName }}</span>
+                    </div>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">管理员</span>
+                    <div class="summary-value">
+                      <span>{{ form.displayName }}</span>
+                      <span class="account-tag">@{{ form.pickName }}</span>
+                    </div>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">云端服务</span>
+                    <div class="summary-value">
+                      <span class="status-indicator" :class="cloudForm.enabled ? 'status--online' : 'status--offline'">
+                        <span class="status-dot"></span>
+                        {{ cloudForm.enabled ? '已启用' : '未启用' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Final Action -->
+                <button @click="handleStep3" class="btn-primary btn-primary--success">
+                  <span>进入收银台</span>
+                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </Transition>
+
+            <!-- ===== Error Message ===== -->
+            <Transition name="slide-up">
+              <div v-if="errorMsg" class="error-toast">
+                <div class="error-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                </div>
+                <span>{{ errorMsg }}</span>
+              </div>
+            </Transition>
+
+            <!-- Debug Tools (Hidden) -->
+            <div class="debug-tools">
+              <button @click="injectTest" class="debug-btn">⚠️ Inject Test</button>
+              <button @click="simulateTraffic" class="debug-btn">⚡ Simulate</button>
+            </div>
           </div>
       </div>
   </div>
@@ -158,7 +319,7 @@ import { ref, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useSettingsStore } from '../stores/settings';
-import { tauriCmd } from '../utils/tauri'; // Import tauriCmd
+import { tauriCmd } from '../utils/tauri';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -177,8 +338,6 @@ const form = reactive({
     storeName: '',
 });
 
-// ...
-
 const injectTest = async () => {
     if(!confirm("Create Full Test Data? (MoJian, CuiGuoli, etc.)")) return;
     try {
@@ -195,23 +354,17 @@ const simulateTraffic = async () => {
     
     loading.value = true;
     try {
-        // 1. Get Token (assume seeded Laoban)
-        // Check if we are logged in, or try to login as laoban
         let token = authStore.currentUser?.token;
         if (!token) {
-            // Try explicit login for test
             const session = await tauriCmd<any>('auth_login', { input: { pick_name: 'laoban', password: 'admin' } });
             token = session.token;
         }
 
-        // 2. Get Products
-        // Need to use tauriCmd directly as store might be empty
         const products = await tauriCmd<any[]>('products_list', { token, q: '' });
         if (products.length === 0) throw new Error("No products found. Inject test data first.");
 
         const orders = [];
         for (let i = 0; i < count; i++) {
-            // Random items
             const items = [];
             const itemCount = Math.floor(Math.random() * 5) + 1;
             for (let j = 0; j < itemCount; j++) {
@@ -220,7 +373,7 @@ const simulateTraffic = async () => {
             }
             orders.push({
                 token,
-                date_ymd: '2026-01-23', // Force today
+                date_ymd: '2026-01-23',
                 shift: '白班',
                 employee: 'admin',
                 items
@@ -228,8 +381,6 @@ const simulateTraffic = async () => {
         }
 
         const start = performance.now();
-        // Send in batches of 5 to avoid overwhelming OS network stack if using HTTP, 
-        // though Tauri IPC is fast. Let's try full parallel for "Stress".
         await Promise.all(orders.map(o => tauriCmd('pos_checkout', o)));
         
         const duration = performance.now() - start;
@@ -253,6 +404,11 @@ const isValidStep1 = computed(() => {
     return form.pickName && form.displayName && form.password && form.brandName && form.storeName;
 });
 
+const testConnection = () => {
+    // TODO: Implement actual connection test
+    alert('连接测试功能开发中...');
+};
+
 const handleStep1 = async () => {
     if (loading.value) return;
     loading.value = true;
@@ -261,11 +417,9 @@ const handleStep1 = async () => {
     try {
         await authStore.bootstrapAdmin(form);
         
-        // Update local settings immediately
         settingsStore.brandSettings.brandName = form.brandName;
         settingsStore.brandSettings.storeName = form.storeName;
         
-        // Go to next step instead of finishing
         step.value = 2;
     } catch (e: any) {
         errorMsg.value = e.message || 'Initialization failed';
@@ -280,31 +434,1024 @@ const handleCloudSkip = () => {
 }
 
 const handleStep2 = () => {
-    // Save Cloud Settings
     settingsStore.cloudSettings.enabled = cloudForm.enabled;
     if (cloudForm.enabled) {
-        settingsStore.cloudSettings.url = cloudForm.url;
-        settingsStore.cloudSettings.key = cloudForm.key;
+        settingsStore.cloudSettings.supabaseUrl = cloudForm.url;
+        settingsStore.cloudSettings.supabaseAnonKey = cloudForm.key;
     }
-    // TODO: Trigger save to backend if needed, currently store persists to localStorage
     step.value = 3;
 };
 
 const handleStep3 = async () => {
-    // Redirect to home (which will go to Cashier)
     router.replace('/');
 };
 </script>
 
 <style scoped>
-.setup-input {
-    @apply w-full h-12 px-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-brand-orange/50 focus:bg-white focus:ring-4 focus:ring-brand-orange/10 transition-all font-bold text-gray-700 placeholder:text-gray-300;
-}
-.setup-btn {
-    @apply w-full h-14 rounded-2xl bg-brand-orange text-white font-bold text-lg shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center;
+/* ===== Design Tokens ===== */
+.setup-view {
+  --brand-orange: #FF6633;
+  --brand-orange-deep: #E85A2C;
+  --brand-orange-light: #FF8855;
+  --brand-orange-glow: rgba(255, 102, 51, 0.4);
+  --brand-blue: #3B82F6;
+  --brand-blue-deep: #2563EB;
+  --brand-emerald: #10B981;
+  --brand-emerald-deep: #059669;
+  
+  --surface-base: #F5F7FA;
+  --surface-card: #FFFFFF;
+  --surface-elevated: rgba(255, 255, 255, 0.95);
+  --surface-muted: #F0F2F5;
+  
+  --text-primary: #1A1D24;
+  --text-secondary: #6B7280;
+  --text-tertiary: #9CA3AF;
+  
+  --border-soft: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.1);
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.1);
+  --shadow-card: 
+    0 0 0 1px var(--border-soft),
+    0 4px 24px rgba(0, 0, 0, 0.04),
+    0 12px 48px rgba(0, 0, 0, 0.06);
+  
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+  
+  background: var(--surface-base);
 }
 
-.animate-bounce-slow {
-  animation: bounce 3s infinite;
+/* ===== Ambient Background ===== */
+.ambient-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: orb-drift 12s ease-in-out infinite;
+}
+
+.ambient-orb--primary {
+  top: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-orange-deep) 100%);
+  opacity: 0.06;
+}
+
+.ambient-orb--secondary {
+  bottom: -25%;
+  left: -15%;
+  width: 450px;
+  height: 450px;
+  background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-deep) 100%);
+  opacity: 0.04;
+  animation-delay: -4s;
+}
+
+.ambient-orb--accent {
+  top: 40%;
+  left: 30%;
+  width: 300px;
+  height: 300px;
+  background: var(--brand-orange);
+  opacity: 0.02;
+  animation-delay: -8s;
+}
+
+@keyframes orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -30px) scale(1.05); }
+  66% { transform: translate(-15px, 20px) scale(0.95); }
+}
+
+.pattern-grid {
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ===== Setup Container ===== */
+.setup-container {
+  transition: transform 0.5s var(--ease-out-expo);
+}
+
+/* ===== Stepper ===== */
+.stepper {
+  position: relative;
+}
+
+.stepper-track {
+  position: absolute;
+  top: 20px;
+  left: 60px;
+  right: 60px;
+  height: 3px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.stepper-track-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand-orange-light), var(--brand-orange));
+  border-radius: var(--radius-full);
+  transition: width 0.6s var(--ease-out-expo);
+  box-shadow: 0 0 12px var(--brand-orange-glow);
+}
+
+.stepper-nodes {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.stepper-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.stepper-node-ring {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: all 0.4s var(--ease-smooth);
+}
+
+.stepper-node.is-current .stepper-node-ring {
+  border-color: var(--brand-orange);
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 0.2; }
+}
+
+.stepper-node-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-card);
+  border: 2px solid var(--border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  transition: all 0.4s var(--ease-spring);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 1;
+}
+
+.stepper-node.is-active .stepper-node-dot {
+  background: linear-gradient(135deg, var(--brand-orange-light), var(--brand-orange-deep));
+  border-color: var(--brand-orange);
+  color: white;
+  box-shadow: 0 4px 16px var(--brand-orange-glow);
+}
+
+.stepper-number {
+  font-weight: 800;
+}
+
+.stepper-check {
+  width: 18px;
+  height: 18px;
+}
+
+.stepper-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: color 0.3s var(--ease-smooth);
+}
+
+.stepper-node.is-active .stepper-label {
+  color: var(--brand-orange);
+}
+
+/* ===== Setup Card ===== */
+.setup-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-glow {
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, var(--brand-orange-glow) 0%, transparent 70%);
+  opacity: 0.3;
+  pointer-events: none;
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.9); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+
+.card-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  animation: card-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes card-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ===== Step Content ===== */
+.step-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.step-content--center {
+  align-items: center;
+  text-align: center;
+}
+
+/* ===== Step Header ===== */
+.step-header {
+  text-align: center;
+}
+
+.step-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  position: relative;
+}
+
+.step-icon svg {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+.step-icon--orange {
+  background: linear-gradient(135deg, var(--brand-orange-light), var(--brand-orange-deep));
+  box-shadow: 0 8px 24px var(--brand-orange-glow);
+}
+
+.step-icon--blue {
+  background: linear-gradient(135deg, #60A5FA, var(--brand-blue-deep));
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+}
+
+.step-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.step-title--success {
+  background: linear-gradient(135deg, var(--brand-emerald), var(--brand-emerald-deep));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.step-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ===== Step Body ===== */
+.step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ===== Form Styles ===== */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.label-icon {
+  font-size: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-left: 4px;
+}
+
+.field-input {
+  height: 48px;
+  padding: 0 16px;
+  background: var(--surface-muted);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: all 0.25s var(--ease-smooth);
+  outline: none;
+}
+
+.field-input::placeholder {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.field-input:hover {
+  background: var(--surface-card);
+  border-color: var(--border-medium);
+}
+
+.field-input:focus {
+  background: var(--surface-card);
+  border-color: var(--brand-orange);
+  box-shadow: 0 0 0 4px rgba(255, 102, 51, 0.1);
+}
+
+.field-input--mono {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 12px;
+  letter-spacing: -0.3px;
+}
+
+.form-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-soft), transparent);
+  margin: 8px 0;
+}
+
+/* ===== Cloud Toggle Card ===== */
+.cloud-toggle-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--surface-muted);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.cloud-toggle-card:hover {
+  background: var(--surface-card);
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+.cloud-toggle-card.is-enabled {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.04));
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  width: 52px;
+  height: 28px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-full);
+  transition: all 0.3s var(--ease-smooth);
+  position: relative;
+}
+
+.toggle-input:checked + .toggle-track {
+  background: var(--brand-blue);
+  border-color: var(--brand-blue);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s var(--ease-spring);
+}
+
+.toggle-input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(24px);
+}
+
+.toggle-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toggle-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.toggle-desc {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.toggle-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge--on {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--brand-blue);
+}
+
+.badge--off {
+  background: var(--surface-muted);
+  color: var(--text-tertiary);
+}
+
+/* ===== Cloud Config ===== */
+.cloud-config {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 0;
+}
+
+/* ===== Cloud Disabled State ===== */
+.cloud-disabled {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+
+.cloud-disabled svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+.cloud-disabled p {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+}
+
+.cloud-disabled span {
+  font-size: 12px;
+}
+
+/* ===== Success Badge ===== */
+.success-badge {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin-bottom: 16px;
+}
+
+.success-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--brand-emerald);
+}
+
+.success-ring--outer {
+  inset: -12px;
+  border-color: rgba(16, 185, 129, 0.2);
+  animation: success-ring 2s ease-out forwards;
+}
+
+.success-ring--inner {
+  animation: success-ring 2s ease-out 0.2s forwards;
+}
+
+@keyframes success-ring {
+  0% { transform: scale(0); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.success-icon {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--brand-emerald), var(--brand-emerald-deep));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+  animation: success-pop 0.6s var(--ease-spring) 0.3s forwards;
+  transform: scale(0);
+}
+
+@keyframes success-pop {
+  0% { transform: scale(0) rotate(-20deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.success-icon svg {
+  width: 40px;
+  height: 40px;
+  color: white;
+  animation: check-draw 0.5s ease-out 0.6s forwards;
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+}
+
+@keyframes check-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.success-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--brand-emerald);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  animation: particle-burst 0.8s ease-out 0.5s forwards;
+  opacity: 0;
+}
+
+@keyframes particle-burst {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  100% { 
+    transform: translate(
+      calc(-50% + cos(calc(var(--i) * 45deg)) * 60px),
+      calc(-50% + sin(calc(var(--i) * 45deg)) * 60px)
+    ) scale(0);
+    opacity: 0;
+  }
+}
+
+/* ===== Summary Card ===== */
+.summary-card {
+  width: 100%;
+  max-width: 360px;
+  background: linear-gradient(135deg, rgba(255, 102, 51, 0.04), transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.summary-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.summary-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.brand-name {
+  color: var(--brand-orange);
+}
+
+.divider {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.account-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status--online .status-dot {
+  background: var(--brand-emerald);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.status--online {
+  color: var(--brand-emerald);
+}
+
+.status--offline .status-dot {
+  background: var(--text-tertiary);
+}
+
+.status--offline {
+  color: var(--text-tertiary);
+}
+
+/* ===== Buttons ===== */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 32px;
+  background: linear-gradient(135deg, var(--brand-orange-light), var(--brand-orange-deep));
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.3s var(--ease-smooth);
+  box-shadow: 
+    0 4px 16px var(--brand-orange-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent);
+  pointer-events: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 24px var(--brand-orange-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 8px var(--brand-orange-glow),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary--success {
+  background: linear-gradient(135deg, var(--brand-emerald), var(--brand-emerald-deep));
+  box-shadow: 
+    0 4px 16px rgba(16, 185, 129, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary--success:hover:not(:disabled) {
+  box-shadow: 
+    0 8px 24px rgba(16, 185, 129, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary {
+  height: 56px;
+  padding: 0 32px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-orange);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 0;
+  align-self: flex-end;
+  transition: color 0.2s var(--ease-smooth);
+}
+
+.btn-link:hover {
+  color: var(--brand-orange-deep);
+}
+
+.btn-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-group .btn-secondary {
+  flex: 0 0 auto;
+}
+
+.btn-group .btn-primary {
+  flex: 1;
+}
+
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.btn-arrow {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s var(--ease-smooth);
+}
+
+.btn-primary:hover:not(:disabled) .btn-arrow {
+  transform: translateX(4px);
+}
+
+/* ===== Error Toast ===== */
+.error-toast {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
+  border: 1px solid #FECACA;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  color: #DC2626;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.15);
+}
+
+.error-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== Debug Tools ===== */
+.debug-tools {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  opacity: 0.05;
+  transition: opacity 0.3s;
+}
+
+.debug-tools:hover {
+  opacity: 1;
+}
+
+.debug-btn {
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-tertiary);
+  background: var(--surface-muted);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.debug-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+/* ===== Vue Transitions ===== */
+.step-slide-enter-active {
+  transition: all 0.5s var(--ease-out-expo);
+}
+
+.step-slide-leave-active {
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.step-slide-enter-from {
+  opacity: 0;
+  transform: translateX(40px);
+}
+
+.step-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.4s var(--ease-out-expo);
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-10px);
+}
+
+.expand-enter-to,
+.expand-leave-from {
+  max-height: 250px;
+}
+
+.slide-up-enter-active {
+  transition: all 0.4s var(--ease-spring);
+}
+
+.slide-up-leave-active {
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
 }
 </style>

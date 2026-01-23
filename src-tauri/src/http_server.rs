@@ -356,6 +356,12 @@ async fn api_rpc_handler(
                 Err(e) => Err(ApiResponse::err(e)),
             }
         },
+        "close_splash" => {
+            match crate::commands::system::close_splash(state.app.clone()).await {
+                Ok(_) => Ok(ApiResponse::ok(Value::Null)),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
 
         _ => Err(ApiResponse::err(format!("unsupported_rpc_cmd: {}", cmd))),
     }
