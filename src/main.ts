@@ -105,6 +105,20 @@ type CloudMeituanOrder = {
   created_at: string
 }
 
+type CloudAuthAccount = {
+  id: string
+  pick_name: string
+  pass_salt: string
+  pass_hash: string
+  role: string
+  identity: string
+  display_name: string
+  equity: number
+  is_active: number
+  created_at: string
+  updated_at: string
+}
+
 const toTs = (iso: string): number => {
   const ms = Date.parse(String(iso || ''))
   if (!Number.isFinite(ms)) return 0
@@ -149,98 +163,114 @@ const fetchAll = async <T = any>(table: string, select: string): Promise<T[]> =>
   if (!token) throw new Error('admin_token_missing')
   if (!supabase) throw new Error('cloud_not_enabled')
 
-  const [products, shiftRecords, salesOrders, salesItems, accountingEntries, meituanOrders] = await Promise.all([
+  const [products, shiftRecords, salesOrders, salesItems, accountingEntries, meituanOrders, authAccounts] = await Promise.all([
     fetchAll<CloudProduct>('products', 'id,name,category,unit_price,cost_price,spec,on_shelf,stock,is_active,created_at,updated_at'),
     fetchAll<CloudShiftRecord>('shift_records', 'id,date_ymd,shift,employee,wangfei,shouhuo,meituan,zhichu,income,yingjiao,created_at'),
     fetchAll<CloudSalesOrder>('sales_orders', 'id,date_ymd,shift,employee,total_revenue,total_profit,created_at,updated_at'),
     fetchAll<CloudSalesItem>('sales_items', 'id,order_id,product_name,original,restock,remaining,redeem,redeem_mode,loss,purchase,stock_prev,stock,sales,revenue,unit_price,cost_price,spec,created_at'),
     fetchAll<CloudAccountingEntry>('accounting_entries', 'id,date_ymd,shift,employee,entry_type,item,amount,bar_pay,finance_pay,created_at'),
     fetchAll<CloudMeituanOrder>('meituan_orders', 'id,date_ymd,shift,employee,coupon_no,raw_text,amount,discount,financial,bar_total,created_at'),
+    fetchAll<CloudAuthAccount>('auth_accounts', 'id,pick_name,pass_salt,pass_hash,role,identity,display_name,equity,is_active,created_at,updated_at'),
   ])
 
   await tauriCmd('db_replace_from_cloud', {
-    token,
-    products: products.map(p => ({
-      id: String(p.id),
-      name: String(p.name),
-      category: String(p.category ?? '饮品'),
-      unit_price: Number(p.unit_price) || 0,
-      cost_price: Number(p.cost_price) || 0,
-      spec: Number(p.spec) || 0,
-      on_shelf: Number(p.on_shelf) || 0,
-      stock: Number(p.stock) || 0,
-      is_active: !!(p as any).is_active,
-      created_at: toTs(String(p.created_at)),
-      updated_at: toTs(String(p.updated_at)),
-    })),
-    shift_records: shiftRecords.map(r => ({
-      id: String(r.id),
-      date_ymd: String(r.date_ymd),
-      shift: String(r.shift),
-      employee: String(r.employee),
-      wangfei: Number(r.wangfei) || 0,
-      shouhuo: Number(r.shouhuo) || 0,
-      meituan: Number(r.meituan) || 0,
-      zhichu: Number(r.zhichu) || 0,
-      income: Number(r.income) || 0,
-      yingjiao: Number(r.yingjiao) || 0,
-      created_at: toTs(String(r.created_at)),
-    })),
-    sales_orders: salesOrders.map(o => ({
-      id: String(o.id),
-      date_ymd: String(o.date_ymd),
-      shift: String(o.shift),
-      employee: String(o.employee),
-      total_revenue: Number(o.total_revenue) || 0,
-      total_profit: Number(o.total_profit) || 0,
-      created_at: toTs(String(o.created_at)),
-      updated_at: toTs(String(o.updated_at)),
-    })),
-    sales_items: salesItems.map(it => ({
-      id: String(it.id),
-      order_id: String(it.order_id),
-      product_name: String(it.product_name),
-      original: it.original == null ? null : Number(it.original),
-      restock: it.restock == null ? null : Number(it.restock),
-      remaining: it.remaining == null ? null : Number(it.remaining),
-      redeem: it.redeem == null ? null : Number(it.redeem),
-      redeem_mode: it.redeem_mode == null ? null : Number(it.redeem_mode),
-      loss: it.loss == null ? null : Number(it.loss),
-      purchase: it.purchase == null ? null : Number(it.purchase),
-      stock_prev: it.stock_prev == null ? null : Number(it.stock_prev),
-      stock: it.stock == null ? null : Number(it.stock),
-      sales: it.sales == null ? null : Number(it.sales),
-      revenue: it.revenue == null ? null : Number(it.revenue),
-      unit_price: it.unit_price == null ? null : Number(it.unit_price),
-      cost_price: it.cost_price == null ? null : Number(it.cost_price),
-      spec: it.spec == null ? null : Number(it.spec),
-      created_at: toTs(String(it.created_at)),
-    })),
-    accounting_entries: accountingEntries.map(it => ({
-      id: String(it.id),
-      date_ymd: String(it.date_ymd),
-      shift: String(it.shift),
-      employee: String(it.employee),
-      entry_type: String(it.entry_type),
-      item: String(it.item),
-      amount: Number(it.amount) || 0,
-      bar_pay: Number(it.bar_pay) || 0,
-      finance_pay: Number(it.finance_pay) || 0,
-      created_at: toTs(String(it.created_at)),
-    })),
-    meituan_orders: meituanOrders.map(it => ({
-      id: String(it.id),
-      date_ymd: String(it.date_ymd),
-      shift: String(it.shift),
-      employee: String(it.employee),
-      coupon_no: it.coupon_no == null ? null : String(it.coupon_no),
-      raw_text: String(it.raw_text),
-      amount: Number(it.amount) || 0,
-      discount: Number(it.discount) || 0,
-      financial: Number(it.financial) || 0,
-      bar_total: Number(it.bar_total) || 0,
-      created_at: toTs(String(it.created_at)),
-    })),
+    input: {
+      token,
+      auth_accounts: authAccounts.map(a => ({
+        id: String(a.id),
+        pick_name: String(a.pick_name),
+        pass_salt: String(a.pass_salt),
+        pass_hash: String(a.pass_hash),
+        role: String(a.role),
+        identity: String(a.identity),
+        display_name: String(a.display_name),
+        equity: Number(a.equity) || 0,
+        is_active: Number(a.is_active) || 1,
+        created_at: toTs(String(a.created_at)),
+        updated_at: toTs(String(a.updated_at)),
+      })),
+      products: products.map(p => ({
+        id: String(p.id),
+        name: String(p.name),
+        category: String(p.category ?? '饮品'),
+        unit_price: Number(p.unit_price) || 0,
+        cost_price: Number(p.cost_price) || 0,
+        spec: Number(p.spec) || 0,
+        on_shelf: Number(p.on_shelf) || 0,
+        stock: Number(p.stock) || 0,
+        is_active: !!(p as any).is_active,
+        created_at: toTs(String(p.created_at)),
+        updated_at: toTs(String(p.updated_at)),
+      })),
+      shift_records: shiftRecords.map(r => ({
+        id: String(r.id),
+        date_ymd: String(r.date_ymd),
+        shift: String(r.shift),
+        employee: String(r.employee),
+        wangfei: Number(r.wangfei) || 0,
+        shouhuo: Number(r.shouhuo) || 0,
+        meituan: Number(r.meituan) || 0,
+        zhichu: Number(r.zhichu) || 0,
+        income: Number(r.income) || 0,
+        yingjiao: Number(r.yingjiao) || 0,
+        created_at: toTs(String(r.created_at)),
+      })),
+      sales_orders: salesOrders.map(o => ({
+        id: String(o.id),
+        date_ymd: String(o.date_ymd),
+        shift: String(o.shift),
+        employee: String(o.employee),
+        total_revenue: Number(o.total_revenue) || 0,
+        total_profit: Number(o.total_profit) || 0,
+        created_at: toTs(String(o.created_at)),
+        updated_at: toTs(String(o.updated_at)),
+      })),
+      sales_items: salesItems.map(it => ({
+        id: String(it.id),
+        order_id: String(it.order_id),
+        product_name: String(it.product_name),
+        original: it.original == null ? null : Number(it.original),
+        restock: it.restock == null ? null : Number(it.restock),
+        remaining: it.remaining == null ? null : Number(it.remaining),
+        redeem: it.redeem == null ? null : Number(it.redeem),
+        redeem_mode: it.redeem_mode == null ? null : Number(it.redeem_mode),
+        loss: it.loss == null ? null : Number(it.loss),
+        purchase: it.purchase == null ? null : Number(it.purchase),
+        stock_prev: it.stock_prev == null ? null : Number(it.stock_prev),
+        stock: it.stock == null ? null : Number(it.stock),
+        sales: it.sales == null ? null : Number(it.sales),
+        revenue: it.revenue == null ? null : Number(it.revenue),
+        unit_price: it.unit_price == null ? null : Number(it.unit_price),
+        cost_price: it.cost_price == null ? null : Number(it.cost_price),
+        spec: it.spec == null ? null : Number(it.spec),
+        created_at: toTs(String(it.created_at)),
+      })),
+      accounting_entries: accountingEntries.map(it => ({
+        id: String(it.id),
+        date_ymd: String(it.date_ymd),
+        shift: String(it.shift),
+        employee: String(it.employee),
+        entry_type: String(it.entry_type),
+        item: String(it.item),
+        amount: Number(it.amount) || 0,
+        bar_pay: Number(it.bar_pay) || 0,
+        finance_pay: Number(it.finance_pay) || 0,
+        created_at: toTs(String(it.created_at)),
+      })),
+      meituan_orders: meituanOrders.map(it => ({
+        id: String(it.id),
+        date_ymd: String(it.date_ymd),
+        shift: String(it.shift),
+        employee: String(it.employee),
+        coupon_no: it.coupon_no == null ? null : String(it.coupon_no),
+        raw_text: String(it.raw_text),
+        amount: Number(it.amount) || 0,
+        discount: Number(it.discount) || 0,
+        financial: Number(it.financial) || 0,
+        bar_total: Number(it.bar_total) || 0,
+        created_at: toTs(String(it.created_at)),
+      })),
+    }
   })
 }
 

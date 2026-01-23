@@ -86,6 +86,17 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const syncService = getSyncService();
+      // 获取完整的账号信息用于同步到云端
+      const accounts = await tauriCmd<any[]>('auth_accounts_list', { token: user.token });
+      const myAccount = accounts.find(a => a.id === user.id);
+      if (myAccount) {
+        syncService.enqueue({
+          table: 'auth_accounts',
+          operation: 'upsert',
+          data: myAccount,
+        });
+      }
+      
       await syncService.enqueue({
         table: 'auth_sessions',
         operation: 'upsert',
@@ -100,7 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
       });
       await syncService.sync();
     } catch (error) {
-      console.error('Failed to sync login to Supabase:', error);
+      console.error('Failed to sync login/account to Supabase:', error);
     }
   };
 

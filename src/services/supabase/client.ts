@@ -392,6 +392,12 @@ class SyncService {
 
         try {
           switch (table) {
+            case 'auth_accounts':
+              await this.syncAuthAccount(operation, data)
+              this.syncQueue.delete(id)
+              syncedCount++
+              break
+
             case 'auth_sessions':
               await this.syncAuthSession(operation, data)
               this.syncQueue.delete(id)
@@ -463,6 +469,22 @@ class SyncService {
       }
     } finally {
       this.syncInProgress = false
+    }
+  }
+
+  // Sync auth account
+  private async syncAuthAccount(_operation: string, data: any): Promise<void> {
+    const client = supabaseAdmin || supabase
+    if (!client) return
+    if (_operation === 'delete') {
+      const { error } = await client.from('auth_accounts').delete().eq('id', data.id)
+      if (error) throw error
+    } else {
+      const { error } = await client.from('auth_accounts').upsert({
+        ...data,
+        updated_at: new Date().toISOString(),
+      })
+      if (error) throw error
     }
   }
 

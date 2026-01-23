@@ -15,6 +15,9 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 
+pub const API_HOST: [u8; 4] = [127, 0, 0, 1];
+pub const API_PORT: u16 = 32521;
+
 // 共享的AppHandle
 pub struct AppState {
     pub app: tauri::AppHandle,
@@ -64,8 +67,7 @@ async fn api_products_list(
     State(state): State<Arc<AppState>>,
     Query(params): Query<ProductsQuery>,
 ) -> Result<Json<ApiResponse<Value>>, (StatusCode, Json<ApiResponse<Value>>)> {
-    // 调用internal函数
-    match crate::products_list_internal(state.app.clone(), params.q, params.include_inactive) {
+    match crate::commands::products::products_list_internal(state.app.clone(), params.q, params.include_inactive) {
         Ok(products) => {
             let json_value = serde_json::to_value(products).unwrap_or(Value::Null);
             Ok(ApiResponse::ok(json_value))
@@ -85,8 +87,8 @@ async fn api_meituan_orders(
     State(state): State<Arc<AppState>>,
     Query(params): Query<MeituanQuery>,
 ) -> Result<Json<ApiResponse<Value>>, (StatusCode, Json<ApiResponse<Value>>)> {
-    let conn = crate::open_db(&state.app).map_err(|e| ApiResponse::<Value>::err(e))?;
-    let date = params.date.unwrap_or_else(|| crate::now_ymd().unwrap_or_default());
+    let conn = crate::db::open_db(&state.app).map_err(|e| ApiResponse::<Value>::err(e))?;
+    let date = params.date.unwrap_or_else(|| crate::db::now_ymd().unwrap_or_default());
     let limit = params.limit.unwrap_or(200);
 
     let mut stmt = conn
@@ -94,7 +96,7 @@ async fn api_meituan_orders(
         .map_err(|e| ApiResponse::<Value>::err(format!("prepare: {e}")))?;
 
     let orders = stmt
-        .query_map([date, limit.to_string()], |row| {
+        .query_map([&date, &limit.to_string()], |row| {
             Ok(serde_json::json!({
                 "raw_text": row.get::<_, String>(0)?,
                 "amount": row.get::<_, f64>(1)?,
@@ -126,11 +128,10 @@ async fn api_shift_calculation(
     State(state): State<Arc<AppState>>,
     Query(params): Query<ShiftQuery>,
 ) -> Result<Json<ApiResponse<Value>>, (StatusCode, Json<ApiResponse<Value>>)> {
-    let conn = crate::open_db(&state.app).map_err(|e| ApiResponse::<Value>::err(e))?;
-    let date = params.date.unwrap_or_else(|| crate::now_ymd().unwrap_or_default());
+    let conn = crate::db::open_db(&state.app).map_err(|e| ApiResponse::<Value>::err(e))?;
+    let date = params.date.unwrap_or_else(|| crate::db::now_ymd().unwrap_or_default());
     let shift = params.shift.unwrap_or_else(|| String::from("白班"));
 
-    // 1. 获取售货收入 (sales_orders)
     let sales_total: f64 = conn
         .query_row(
             "SELECT SUM(total_revenue) FROM sales_orders WHERE date_ymd = ?1 AND shift = ?2",
@@ -141,7 +142,6 @@ async fn api_shift_calculation(
         .map_err(|e| ApiResponse::<Value>::err(format!("sales: {e}")))?
         .unwrap_or(0.0);
 
-    // 2. 获取美团结算 (meituan_orders - bar_total合计)
     let meituan_total: f64 = conn
         .query_row(
             "SELECT SUM(bar_total) FROM meituan_orders WHERE date_ymd = ?1 AND shift = ?2",
@@ -152,7 +152,6 @@ async fn api_shift_calculation(
         .map_err(|e| ApiResponse::<Value>::err(format!("meituan: {e}")))?
         .unwrap_or(0.0);
 
-    // 3. 获取支付（吧台支付合计）(accounting_entries - entry_type='支出' - SUM(bar_pay))
     let bar_pay: f64 = conn
         .query_row(
             "SELECT SUM(bar_pay) FROM accounting_entries WHERE date_ymd = ?1 AND shift = ?2 AND entry_type = '支出'",
@@ -163,7 +162,6 @@ async fn api_shift_calculation(
         .map_err(|e| ApiResponse::<Value>::err(format!("bar_pay: {e}")))?
         .unwrap_or(0.0);
 
-    // 4. 获取入账总额 (accounting_entries - entry_type='入账')
     let income: f64 = conn
         .query_row(
             "SELECT SUM(amount) FROM accounting_entries WHERE date_ymd = ?1 AND shift = ?2 AND entry_type = '入账'",
@@ -174,7 +172,7 @@ async fn api_shift_calculation(
         .map_err(|e| ApiResponse::<Value>::err(format!("income: {e}")))?
         .unwrap_or(0.0);
 
-    let internet_fee: f64 = 0.0; // 网费暂时无法自动获取，需手动输入
+    let internet_fee: f64 = 0.0; 
     let amount_due: f64 = internet_fee + sales_total - meituan_total - bar_pay;
 
     let result = serde_json::json!({
@@ -195,11 +193,10 @@ async fn api_finance_accounting(
     State(state): State<Arc<AppState>>,
     Query(params): Query<ShiftQuery>,
 ) -> Result<Json<ApiResponse<Value>>, (StatusCode, Json<ApiResponse<Value>>)> {
-    let conn = crate::open_db(&state.app).map_err(|e| ApiResponse::<Value>::err(e))?;
-    let date = params.date.unwrap_or_else(|| crate::now_ymd().unwrap_or_default());
+    let conn = crate::db::open_db(&state.app).map_err(|e| ApiResponse::<Value>::err(e))?;
+    let date = params.date.unwrap_or_else(|| crate::db::now_ymd().unwrap_or_default());
     let shift = params.shift.unwrap_or_else(|| String::from("白班"));
 
-    // 获取支出记录
     let mut stmt_exp = conn
         .prepare("SELECT item, amount, bar_pay, finance_pay FROM accounting_entries WHERE date_ymd = ?1 AND shift = ?2 AND entry_type = '支出' ORDER BY created_at ASC")
         .map_err(|e| ApiResponse::<Value>::err(format!("prepare exp: {e}")))?;
@@ -217,7 +214,6 @@ async fn api_finance_accounting(
         .filter_map(|r| r.ok())
         .collect();
 
-    // 获取入账记录
     let mut stmt_inc = conn
         .prepare("SELECT item, amount FROM accounting_entries WHERE date_ymd = ?1 AND shift = ?2 AND entry_type = '入账' ORDER BY created_at ASC")
         .map_err(|e| ApiResponse::<Value>::err(format!("prepare inc: {e}")))?;
@@ -253,13 +249,11 @@ async fn api_finance_accounting(
 pub async fn start_http_server(app: tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let state = Arc::new(AppState { app: app.clone() });
 
-    // CORS配置 - 允许localhost:32520访问
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
 
-    // 路由配置
     let api_routes = Router::new()
         .route("/products", get(api_products_list))
         .route("/meituan/orders", get(api_meituan_orders))
@@ -271,15 +265,9 @@ pub async fn start_http_server(app: tauri::AppHandle) -> Result<(), Box<dyn std:
         .layer(cors)
         .with_state(state);
 
-    // 绑定到localhost:32521
-    let addr = SocketAddr::from(([127, 0, 0, 1], 32521));
+    let addr = SocketAddr::from((API_HOST, API_PORT));
     println!("🚀 HTTP API Server started at http://{}", addr);
-    println!("   - Products: http://127.0.0.1:32521/api/products");
-    println!("   - Meituan Orders: http://127.0.0.1:32521/api/meituan/orders");
-    println!("   - Shift Calculation: http://127.0.0.1:32521/api/shift/calculation");
-    println!("   - Finance Accounting: http://127.0.0.1:32521/api/finance/accounting");
 
-    // 启动服务器
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app_router).await?;
 
