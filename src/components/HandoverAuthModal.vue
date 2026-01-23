@@ -87,9 +87,9 @@ const selectSuggest = (name: string) => {
 
 <template>
   <Transition name="fade">
-    <div v-if="isOpen" class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+    <div v-if="isOpen" class="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
       <Transition name="scale" appear>
-        <div v-if="isOpen" class="w-full max-w-[400px] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col p-10 space-y-8">
+        <div v-if="isOpen" class="w-full max-w-[400px] bg-white rounded-[40px] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col p-10 space-y-8">
           
           <div class="text-center space-y-2">
             <div class="w-16 h-16 bg-linear-to-tr from-brand-orange to-orange-400 rounded-2xl mx-auto flex items-center justify-center shadow-xl shadow-orange-200/50 mb-4 transition-transform hover:rotate-12">
