@@ -1765,14 +1765,14 @@ onBeforeUnmount(() => {
             <div class="absolute top-0 right-0 w-80 h-80 bg-linear-to-br from-brand-orange/10 to-transparent rounded-bl-full pointer-events-none blur-3xl"></div>
             
             <!-- Shift Information & Stats Bar -->
-            <div class="bg-white/40 backdrop-blur-md px-4 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-6">
+            <div class="bg-white/40 backdrop-blur-md px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <div class="flex flex-wrap items-center gap-4 min-w-0">
                    <div class="flex flex-col">
                       <span class="text-[14px] font-bold tracking-wide text-gray-900">售货清单</span>
                       <span class="text-[8px] font-black text-brand-orange uppercase tracking-widest leading-none mt-1">Sales Inventory</span>
                    </div>
                    <!-- Staff Info -->
-                   <div class="flex items-center bg-white/50 backdrop-blur-md rounded-2xl border border-white/60 px-4 h-9 text-[11px] gap-3 shadow-sm">
+                   <div class="flex items-center bg-white/50 backdrop-blur-md rounded-2xl border border-white/60 px-4 h-9 text-[11px] gap-3 shadow-sm whitespace-nowrap shrink-0">
                       <span class="font-bold text-gray-400">{{ shiftCtxForUi.dateYmd }}</span>
                       <span class="w-px h-3 bg-gray-200"></span>
                       <span class="font-black text-brand-orange">{{ shiftCtxForUi.shift }}</span>
@@ -1783,7 +1783,7 @@ onBeforeUnmount(() => {
                       </div>
                    </div>
 
-                    <div class="flex items-center bg-white/30 backdrop-blur-md rounded-2xl border border-white/50 px-3 h-9 text-[11px] gap-3 shadow-inner">
+                    <div class="flex items-center bg-white/30 backdrop-blur-md rounded-2xl border border-white/50 px-3 h-9 text-[11px] gap-3 shadow-inner max-w-full overflow-x-auto whitespace-nowrap shrink-0">
                       <div class="flex items-center gap-2">
                         <span class="text-gray-400">权限</span>
                         <span class="font-black" :class="canEdit ? 'text-emerald-600' : 'text-gray-600'">{{ permissionLabel }}</span>
@@ -1827,7 +1827,7 @@ onBeforeUnmount(() => {
 
                     <div
                       v-if="activeShiftMissing"
-                      class="flex items-center gap-2 px-3 h-9 rounded-2xl border border-red-200 bg-red-50 text-[11px] font-bold text-red-600"
+                      class="flex items-center gap-2 px-3 h-9 rounded-2xl border border-red-200 bg-red-50 text-[11px] font-bold text-red-600 whitespace-nowrap shrink-0"
                       title="云端未找到当前进行中的班次（shifts.status=active）。请在交班流程创建/开始班次后再进入收银台。"
                     >
                       <span>未找到当前班次</span>
@@ -1835,7 +1835,7 @@ onBeforeUnmount(() => {
                     </div>
                    
                     <!-- Stats -->
-                    <div class="flex items-center bg-white/20 backdrop-blur-md p-1 rounded-2xl border border-white/40 h-9 gap-3 px-3 shadow-inner">
+                    <div class="flex items-center bg-white/20 backdrop-blur-md p-1 rounded-2xl border border-white/40 h-9 gap-3 px-3 shadow-inner max-w-full overflow-x-auto whitespace-nowrap">
                         <div class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/40 transition-all cursor-help group/stat">
                           <span class="text-[13px] text-gray-400 group-hover/stat:text-brand-orange transition-colors">网费</span>
                           <span class="text-[13px] text-gray-800">{{ formatVal(app.shiftStats.internetFee) }}</span>
@@ -1862,7 +1862,7 @@ onBeforeUnmount(() => {
                      </div>
 
                        <!-- 售货清单操作 (超管专用) - 右对齐 -->
-                        <div class="flex items-center gap-2 ml-4 justify-end flex-1">
+                        <div class="flex flex-wrap items-center gap-2 justify-end flex-1 min-w-0">
                             <!-- 导入/撤销按钮 (始终显示) -->
                            <div class="flex items-center gap-1 h-10 shrink-0">
                               <button
