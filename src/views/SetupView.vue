@@ -941,9 +941,11 @@ const handleStep3 = async () => {
   gap: 24px;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: calc(100vh - 380px); /* 计算可用高度 */
+  /* 优化高度计算：增加 PC 端可视高度 */
+  max-height: calc(100vh - 320px); 
   padding-right: 8px;
   margin-right: -8px;
+  position: relative;
 }
 
 /* ===== Hide Scrollbar ===== */
@@ -959,7 +961,17 @@ const handleStep3 = async () => {
 /* Inline Footer for seamless flow */
 .step-footer-inline {
   margin-top: 12px;
-  padding-bottom: 24px; /* Ensure space at bottom */
+  padding-bottom: 32px; /* 增加底部留白，触感更好 */
+  display: flex;
+  justify-content: center; /* 按钮居中 */
+  width: 100%;
+}
+
+/* 确保按钮在滚动流中看起来像个主体 */
+.step-footer-inline .btn-primary,
+.step-footer-inline .btn-group {
+  width: 100%; /* 默认全宽更好用，尤其是移动端 */
+  max-width: 400px; /* PC端防止太长 */
 }
 
 /* ===== Form Styles ===== */
