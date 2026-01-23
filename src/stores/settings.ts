@@ -43,6 +43,11 @@ export interface CloudSettings {
   supabaseAnonKey: string
 }
 
+export interface BusinessSettings {
+  passwordlessAll: boolean
+  equityEnabled: boolean
+}
+
 export const useSettingsStore = defineStore('settings', () => {
   const brandSettings = ref<BrandSettings>({
     brandName: '创新意 电竞馆',
@@ -76,6 +81,11 @@ export const useSettingsStore = defineStore('settings', () => {
     enabled: false,
     supabaseUrl: '',
     supabaseAnonKey: '',
+  })
+
+  const businessSettings = ref<BusinessSettings>({
+    passwordlessAll: true,
+    equityEnabled: false,
   })
 
   const initialized = ref(false)
@@ -141,6 +151,15 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     }
 
+    const savedBusiness = localStorage.getItem('businessSettings')
+    if (savedBusiness) {
+      try {
+        businessSettings.value = { ...businessSettings.value, ...JSON.parse(savedBusiness) }
+      } catch (error) {
+        console.warn('Failed to load business settings')
+      }
+    }
+
     ;(async () => {
       try {
         const v = await tauriCmd<any>('kv_get', { key: 'settings.cloud' })
@@ -152,6 +171,22 @@ export const useSettingsStore = defineStore('settings', () => {
             supabaseAnonKey: String(v.supabaseAnonKey || ''),
           }
           localStorage.setItem('cloudSettings', JSON.stringify(cloudSettings.value))
+        }
+      } catch {
+        // ignore
+      }
+    })()
+
+    ;(async () => {
+      try {
+        const v = await tauriCmd<any>('kv_get', { key: 'settings.business' })
+        if (v && typeof v === 'object') {
+          businessSettings.value = {
+            ...businessSettings.value,
+            passwordlessAll: v.passwordlessAll === undefined ? businessSettings.value.passwordlessAll : !!v.passwordlessAll,
+            equityEnabled: v.equityEnabled === undefined ? businessSettings.value.equityEnabled : !!v.equityEnabled,
+          }
+          localStorage.setItem('businessSettings', JSON.stringify(businessSettings.value))
         }
       } catch {
         // ignore
@@ -189,6 +224,18 @@ export const useSettingsStore = defineStore('settings', () => {
     })()
   }, { deep: true })
 
+  watch(businessSettings, () => {
+    localStorage.setItem('businessSettings', JSON.stringify(businessSettings.value))
+    enqueueSetting('business', businessSettings.value)
+    ;(async () => {
+      try {
+        await tauriCmd('kv_set', { key: 'settings.business', value: businessSettings.value })
+      } catch {
+        // ignore
+      }
+    })()
+  }, { deep: true })
+
   const syncToCloud = async () => {
     const syncService = getSyncService()
     return await syncService.forceSync()
@@ -199,6 +246,7 @@ export const useSettingsStore = defineStore('settings', () => {
     logoSettings,
     animationSettings,
     cloudSettings,
+    businessSettings,
     init,
     syncToCloud,
   }

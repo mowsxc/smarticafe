@@ -237,8 +237,37 @@ export type Database = {
 
 // ==================== Supabase Client Setup ====================
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+type LocalCloudSettings = {
+  enabled?: boolean
+  supabaseUrl?: string
+  supabaseAnonKey?: string
+}
+
+const readLocalCloudSettings = (): LocalCloudSettings | null => {
+  try {
+    const raw = localStorage.getItem('cloudSettings')
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    return parsed as LocalCloudSettings
+  } catch {
+    return null
+  }
+}
+
+const localCloud = readLocalCloudSettings()
+const localEnabled = localCloud?.enabled
+
+const envSupabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
+const envSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+const supabaseUrl = localEnabled === false
+  ? ''
+  : (String(localCloud?.supabaseUrl || '').trim() || envSupabaseUrl)
+
+const supabaseAnonKey = localEnabled === false
+  ? ''
+  : (String(localCloud?.supabaseAnonKey || '').trim() || envSupabaseAnonKey)
 
 // 核心 Supabase 客户端 (使用 anon key)
 // 注意：在浏览器环境严禁使用 Service Role Key，否则会被 Supabase 拦截并报错 401

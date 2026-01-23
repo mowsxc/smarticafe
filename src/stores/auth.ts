@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { getSyncService } from '../services/supabase/client';
 import { tauriCmd } from '../utils/tauri';
+import { useSettingsStore } from './settings';
 
 // Import enhanced sync service
 declare global {
@@ -39,6 +40,9 @@ type BootstrapAdminInput = {
 };
 
 export const useAuthStore = defineStore('auth', () => {
+  const settingsStore = useSettingsStore();
+  settingsStore.init();
+
   // Init from storage
   const storedUser = localStorage.getItem('auth_user');
   const currentUser = ref<User | null>(storedUser ? JSON.parse(storedUser) : null);
@@ -102,6 +106,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 员工免密登录
   const employeeLogin = async (name: string) => {
+    if (!settingsStore.businessSettings.passwordlessAll) {
+      throw new Error('已关闭全员免密，请使用标准登录输入密码');
+    }
     const session = await tauriCmd<TauriAuthSession>('auth_employee_login', { pick_name: name });
     const token = session?.token;
 
@@ -223,6 +230,9 @@ export const useAuthStore = defineStore('auth', () => {
 
     const { employees, bosses } = await fetchPickList();
     if (employees.includes(name)) {
+      if (!settingsStore.businessSettings.passwordlessAll) {
+        throw new Error('已关闭全员免密，请使用标准登录输入密码');
+      }
       try {
         await employeeLogin(name);
         return;

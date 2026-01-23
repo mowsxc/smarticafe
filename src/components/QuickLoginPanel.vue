@@ -22,7 +22,7 @@
 
           <div class="px-8 pb-8 space-y-6">
             <!-- Section: Employees -->
-            <div class="space-y-4">
+            <div v-if="passwordlessEnabled()" class="space-y-4">
               <div class="flex items-center gap-4">
                 <div class="h-px flex-1 bg-gray-100"></div>
                 <div class="flex flex-col items-center">
@@ -44,6 +44,10 @@
                   {{ name }}
                 </button>
               </div>
+            </div>
+
+            <div v-else class="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-[12px] text-slate-600">
+              已关闭全员免密登录，请使用标准登录输入密码。
             </div>
 
             <!-- Section: Shareholders -->
@@ -105,6 +109,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { useSettingsStore } from '../stores/settings';
 
 interface Props {
   isOpen: boolean;
@@ -124,11 +129,15 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>();
 
 const authStore = useAuthStore();
+const settingsStore = useSettingsStore();
+settingsStore.init();
 
 const employees = ref<string[]>([]);
 const shareholders = ref<string[]>([]);
 
 const errorMessage = ref('');
+
+const passwordlessEnabled = () => !!settingsStore.businessSettings.passwordlessAll;
 
 watch(
   () => props.isOpen,

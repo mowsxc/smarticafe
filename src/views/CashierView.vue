@@ -112,6 +112,13 @@ const formatVal = formatAuto;
 const showTaxModal = ref(false);
 const tempTaxRate = ref('7');
 
+const showStartShiftModal = ref(false);
+const startShiftForm = ref({
+  date: '',
+  shift: '白班',
+  employee: '',
+});
+
 const openTaxModal = () => {
     if (isReadonly.value) return; // Prevent if readonly
     tempTaxRate.value = (meituanTaxRate.value * 100).toFixed(0);
@@ -818,6 +825,83 @@ const loadActiveShiftFromCloud = async () => {
   activeShiftCtx.value = { dateYmd, shift, employee };
 };
 
+const todayYmd = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+const openStartShiftModal = () => {
+  const user = auth.currentUser;
+  const defaultEmployee = String(user?.username || '').trim() || String(app.currentEmployee || '').trim();
+  startShiftForm.value = {
+    date: todayYmd(),
+    shift: '白班',
+    employee: defaultEmployee || '管理员',
+  };
+  showStartShiftModal.value = true;
+};
+
+const ensureShiftContext = async (): Promise<boolean> => {
+  if (activeShiftCtx.value?.dateYmd && activeShiftCtx.value?.shift && activeShiftCtx.value?.employee) {
+    app.setShift(activeShiftCtx.value.dateYmd, activeShiftCtx.value.shift, activeShiftCtx.value.employee);
+    return true;
+  }
+
+  // Local fallback: if local shift_records has any row, use latest
+  try {
+    const rows = await tauriCmd<any[]>('shift_records_list', { limit: 1 });
+    const r = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+    const dateYmd = String(r?.date_ymd || '').trim();
+    const shift = String(r?.shift || '').trim();
+    const employee = String(r?.employee || '').trim();
+    if (dateYmd && shift && employee) {
+      activeShiftCtx.value = { dateYmd, shift, employee };
+      app.setShift(dateYmd, shift, employee);
+      activeShiftMissing.value = false;
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+
+  // No record: must prompt user to start first shift
+  openStartShiftModal();
+  activeShiftMissing.value = true;
+  return false;
+};
+
+const confirmStartShift = async () => {
+  const date = String(startShiftForm.value.date || '').trim();
+  const shift = String(startShiftForm.value.shift || '').trim();
+  const employee = String(startShiftForm.value.employee || '').trim();
+  if (!date || !shift || !employee) return;
+
+  try {
+    await tauriCmd<string>('shift_record_insert', {
+      input: {
+        date_ymd: date,
+        shift,
+        employee,
+        wangfei: 0,
+        shouhuo: 0,
+        meituan: 0,
+        zhichu: 0,
+        income: 0,
+        yingjiao: 0,
+      },
+    });
+  } catch (e) {
+    console.error('Failed to create first shift record:', e);
+    return;
+  }
+
+  activeShiftCtx.value = { dateYmd: date, shift, employee };
+  app.setShift(date, shift, employee);
+  activeShiftMissing.value = false;
+  showStartShiftModal.value = false;
+};
+
 const applyShiftLiveDraft = async (draft: any) => {
   if (!draft) return;
 
@@ -1156,6 +1240,10 @@ onMounted(async () => {
     }));
     
     await loadActiveShiftFromCloud();
+    const ok = await ensureShiftContext();
+    if (!ok) {
+      return;
+    }
 
     // 3. Load Draft (Restore previous state)
     await loadDraft();
@@ -2333,6 +2421,61 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </Transition>
+
+    <Transition name="fade">
+      <div v-if="showStartShiftModal" class="fixed inset-0 z-100 flex items-center justify-center p-4 modal-backdrop">
+        <Transition name="scale" appear>
+          <div v-if="showStartShiftModal" class="w-full max-w-[420px] glass-card rounded-[32px] shadow-2xl overflow-hidden relative" @click.stop>
+            <div class="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white/40">
+              <div class="flex flex-col">
+                <span class="font-black text-gray-800 text-lg tracking-tight">开班 / 创建当前班次</span>
+                <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Start Shift Required</span>
+              </div>
+              <div class="text-[10px] font-black text-orange-500 uppercase tracking-widest">第一次使用</div>
+            </div>
+
+            <div class="p-8 space-y-5 bg-white/40">
+              <div class="space-y-2">
+                <label class="text-[12px] font-medium text-gray-600">日期</label>
+                <input
+                  v-model="startShiftForm.date"
+                  type="date"
+                  class="w-full h-11 px-4 rounded-xl border border-gray-200 focus:border-brand-orange/40 focus:ring-4 focus:ring-orange-500/10 outline-none font-mono text-sm"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-[12px] font-medium text-gray-600">班次</label>
+                <select
+                  v-model="startShiftForm.shift"
+                  class="w-full h-11 px-4 rounded-xl border border-gray-200 focus:border-brand-orange/40 focus:ring-4 focus:ring-orange-500/10 outline-none font-mono text-sm"
+                >
+                  <option value="白班">白班</option>
+                  <option value="晚班">晚班</option>
+                </select>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-[12px] font-medium text-gray-600">当班人</label>
+                <input
+                  v-model="startShiftForm.employee"
+                  type="text"
+                  class="w-full h-11 px-4 rounded-xl border border-gray-200 focus:border-brand-orange/40 focus:ring-4 focus:ring-orange-500/10 outline-none font-mono text-sm"
+                  placeholder="默认=当前登录人"
+                />
+              </div>
+
+              <button
+                @click="confirmStartShift"
+                class="glass-button w-full h-14 bg-brand-orange text-white font-black rounded-[20px] shadow-xl transition-all active:scale-95"
+              >
+                确认开班并进入收银台
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </Transition>
     <!-- 套餐配置弹窗 -->
     <Transition name="fade">
       <div v-if="showPackageModal" class="fixed inset-0 z-100 modal-backdrop flex items-center justify-center" @click.self="showPackageModal = false">
@@ -2387,7 +2530,7 @@ onBeforeUnmount(() => {
         </Transition>
       </div>
     </Transition>
-    
+
     <!-- Tax Modal -->
     <Transition name="fade">
       <div v-if="showTaxModal" class="fixed inset-0 z-100 flex items-center justify-center p-4 modal-backdrop" @click.self="showTaxModal = false">

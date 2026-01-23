@@ -42,6 +42,27 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
+              <h2 class="text-lg font-semibold">业务开关</h2>
+              <p class="mt-1 text-sm text-slate-500">控制登录方式与股权相关模块展示</p>
+            </div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">Business</span>
+          </div>
+
+          <div class="mt-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <input id="passwordless-all" v-model="businessSettings.passwordlessAll" type="checkbox" class="h-4 w-4 accent-orange-500" />
+              <label for="passwordless-all" class="text-sm text-slate-700">全员免密登录（默认开启）</label>
+            </div>
+            <div class="flex items-center gap-3">
+              <input id="equity-enabled" v-model="businessSettings.equityEnabled" type="checkbox" class="h-4 w-4 accent-orange-500" />
+              <label for="equity-enabled" class="text-sm text-slate-700">开启股权代持系统</label>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
               <h2 class="text-lg font-semibold">云数据库（Supabase）</h2>
               <p class="mt-1 text-sm text-slate-500">开启后启用云端同步与实时协同；关闭则纯本地运行</p>
             </div>
@@ -302,7 +323,7 @@ const selectTheme = (themeId: string) => {
 const settingsStore = useSettingsStore();
 settingsStore.init();
 
-const { brandSettings, logoSettings, animationSettings, cloudSettings } = storeToRefs(settingsStore);
+const { brandSettings, logoSettings, animationSettings, cloudSettings, businessSettings } = storeToRefs(settingsStore);
 const showPreview = computed(() => settingsStore.animationSettings.duration >= 0);
 const transitionTypes = [
   { value: 'ease', label: '平滑' },
