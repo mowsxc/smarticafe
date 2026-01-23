@@ -14,7 +14,7 @@
       <div class="setup-container w-full max-w-[540px] z-10">
           
           <!-- ===== Progress Stepper ===== -->
-          <div class="stepper mb-10 px-4">
+          <div class="stepper mb-6 px-4">
             <div class="stepper-track">
               <div class="stepper-track-fill" :style="{ width: `${((step - 1) / 2) * 100}%` }"></div>
             </div>
@@ -688,7 +688,7 @@ const handleStep3 = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px; /* 12 -> 8 */
 }
 
 /* 光圈容器：用于精确居中对齐 */
@@ -772,10 +772,10 @@ const handleStep3 = async () => {
   background: var(--surface-card);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
-  padding: 48px;
+  padding: 32px 40px; /* 48 -> 32 */
   position: relative;
   overflow: hidden;
-  min-height: 520px;
+  min-height: 480px; /* 520 -> 480 */
   display: flex;
   flex-direction: column;
 }
@@ -821,7 +821,7 @@ const handleStep3 = async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 16px; /* 32 -> 16 */
   position: relative;
   z-index: 1;
 }
@@ -938,11 +938,11 @@ const handleStep3 = async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 8px; /* 极致精简：12 -> 8 */
   overflow-y: auto;
   overflow-x: hidden;
-  /* 优化高度计算：增加 PC 端可视高度 */
-  max-height: calc(100vh - 320px); 
+  /* 优化高度计算：极简模式空间配额 */
+  max-height: calc(100vh - 220px); 
   padding-right: 8px;
   margin-right: -8px;
   position: relative;
@@ -978,7 +978,7 @@ const handleStep3 = async () => {
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px; /* 16 -> 10 */
 }
 
 .form-section-label {
@@ -1109,7 +1109,7 @@ const handleStep3 = async () => {
 .form-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border-soft), transparent);
-  margin: 8px 0;
+  margin: 4px 0; /* 8 -> 4 */
 }
 
 /* ===== Cloud Toggle Card ===== */
