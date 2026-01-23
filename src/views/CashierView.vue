@@ -41,94 +41,7 @@ const cart = useCartStore();
 const activeShiftCtx = ref<{ dateYmd: string; shift: string; employee: string } | null>(null);
 const activeShiftMissing = ref<boolean>(false);
 
-const realtimeStatus = ref<string>('DISCONNECTED');
-const lastCloudUpdatedAt = ref<string | null>(null);
-
-const syncPending = ref<number>(0);
-const syncLastSync = ref<string>('never');
-const syncError = ref<string | null>(null);
-const syncInProgress = ref<boolean>(false);
-let syncStatusTimer: any = null;
-
 const shiftCtxForUi = computed(() => getShiftCtx());
-const realtimeLabel = computed(() => {
-  const s = String(realtimeStatus.value || '').toUpperCase();
-  if (!s || s === 'DISCONNECTED') return '未连接';
-  if (s === 'SUBSCRIBED') return '实时已连接';
-  if (s === 'CLOSED') return '连接已关闭';
-  if (s === 'CHANNEL_ERROR') return '连接异常';
-  return s;
-});
-const realtimeDotClass = computed(() => {
-  const s = String(realtimeStatus.value || '').toUpperCase();
-  if (s === 'SUBSCRIBED') return 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]';
-  if (s === 'CHANNEL_ERROR') return 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]';
-  return 'bg-gray-400';
-});
-const lastCloudUpdatedAtShort = computed(() => {
-  const v = lastCloudUpdatedAt.value;
-  if (!v) return '--';
-  return v.replace('T', ' ').replace('Z', '').slice(0, 19);
-});
-
-const syncLastSyncShort = computed(() => {
-  const v = String(syncLastSync.value || '');
-  if (!v || v === 'never') return 'never';
-  return v.replace('T', ' ').replace('Z', '').slice(0, 19);
-});
-
-const refreshSyncStatus = async () => {
-  try {
-    const svc = getSyncService();
-    const s = svc.getStatus();
-    syncPending.value = Number(s.pendingChanges) || 0;
-    syncLastSync.value = String(s.lastSync || 'never');
-    syncError.value = s.syncError ? String(s.syncError) : null;
-    syncInProgress.value = svc.isSyncing();
-  } catch {
-    // ignore
-  }
-};
-
-const permissionTooltip = computed(() => {
-  const role = auth.currentUser?.role || '';
-  const ctx = getShiftCtx();
-  const user = auth.currentUser?.username || '';
-  const label = canEdit.value ? '可编辑' : '只读';
-  return `权限：${label}\n角色：${role || '-'}\n当班：${ctx.employee || '-'}\n当前登录：${user || '-'}`;
-});
-
-const realtimeTooltip = computed(() => {
-  return `实时订阅：${realtimeLabel.value}\n状态码：${String(realtimeStatus.value || '')}`;
-});
-
-const cloudTooltip = computed(() => {
-  return `云端更新时间：${lastCloudUpdatedAtShort.value}`;
-});
-
-const pendingTooltip = computed(() => {
-  return `待同步队列：${syncPending.value}\n上次同步：${syncLastSyncShort.value}`;
-});
-
-const syncErrorTooltip = computed(() => {
-  if (!syncError.value) return '同步正常';
-  return `同步失败：\n${String(syncError.value)}`;
-});
-
-const activeShiftTooltip = computed(() => {
-  if (!activeShiftMissing.value) return '当前班次正常';
-  return '未找到当前班次（shifts.status=active）\n请到交班流程开班/切换后再进入收银台';
-});
-
-const triggerManualSync = async () => {
-  try {
-    syncInProgress.value = true;
-    const svc = getSyncService();
-    await svc.forceSync();
-  } finally {
-    await refreshSyncStatus();
-  }
-};
 
 const getShiftCtx = () => {
   if (activeShiftCtx.value) return activeShiftCtx.value;
@@ -984,8 +897,6 @@ const loadShiftLiveFromCloud = async () => {
 
   if (error || !data?.payload) return;
 
-  lastCloudUpdatedAt.value = data?.updated_at ? String(data.updated_at) : null;
-
   if (!canEdit.value) {
     await applyShiftLiveDraft(data.payload);
   }
@@ -1004,26 +915,15 @@ const setupShiftLiveRealtime = () => {
   } catch {
     // ignore
   }
-  shiftLiveSubscription = subscribeToTable(
-    'shift_live',
-    `id=eq.${id}`,
-    async (payload: any) => {
+  shiftLiveSubscription = subscribeToTable('shift_live', `id=eq.${id}`, async (payload: any) => {
     const now = Date.now();
     if (canEdit.value && now - lastLocalEditAt.value < 2000) return;
     const nextDraft = payload?.new?.payload;
     if (!nextDraft) return;
-
-    const updatedAt = payload?.new?.updated_at;
-    if (updatedAt) lastCloudUpdatedAt.value = String(updatedAt);
-
     if (!canEdit.value) {
       await applyShiftLiveDraft(nextDraft);
     }
-    },
-    (status: string) => {
-      realtimeStatus.value = status;
-    }
-  );
+  });
 };
 
 const persistShiftLive = async (draft: any) => {
@@ -1239,10 +1139,6 @@ onMounted(async () => {
     await loadShiftLiveFromCloud();
     setupShiftLiveRealtime();
 
-    await refreshSyncStatus();
-    if (syncStatusTimer) clearInterval(syncStatusTimer);
-    syncStatusTimer = setInterval(refreshSyncStatus, 3000);
-
   } catch (e) {
     console.error("Failed to load products:", e);
   } finally {
@@ -1266,13 +1162,6 @@ onBeforeUnmount(() => {
     // ignore
   }
   shiftLiveSubscription = null;
-
-  try {
-    if (syncStatusTimer) clearInterval(syncStatusTimer);
-  } catch {
-    // ignore
-  }
-  syncStatusTimer = null;
 });
 
 const updateHandoverCalc = () => {
@@ -1807,105 +1696,15 @@ onBeforeUnmount(() => {
                       <span class="font-black text-brand-orange">{{ shiftCtxForUi.shift }}</span>
                       <span class="w-px h-3 bg-gray-200"></span>
                       <div class="flex items-center gap-2">
-                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <div
+                          class="w-1.5 h-1.5 rounded-full"
+                          :class="activeShiftMissing ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'"
+                          :title="activeShiftMissing ? '未找到当前班次（shifts.status=active），请到交班流程开班/切换' : ''"
+                        ></div>
                         <span class="font-black text-gray-800">{{ shiftCtxForUi.employee }}</span>
                       </div>
                    </div>
-
-                    <div class="flex items-center gap-2 bg-white/30 backdrop-blur-md rounded-2xl border border-white/50 px-2 h-9 shadow-inner shrink-0">
-                      <div class="relative group">
-                        <div class="h-8 w-8 rounded-xl flex items-center justify-center" :class="canEdit ? 'text-emerald-600' : 'text-gray-500'" :title="permissionTooltip" aria-label="权限状态">
-                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                          </svg>
-                        </div>
-                        <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line">
-                          {{ permissionTooltip }}
-                        </div>
-                      </div>
-
-                      <div class="relative group">
-                        <div class="h-8 w-8 rounded-xl flex items-center justify-center text-gray-700" :title="realtimeTooltip" aria-label="实时订阅状态">
-                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4.9 19.1a10 10 0 0 1 0-14.2" />
-                            <path d="M7.8 16.2a6 6 0 0 1 0-8.4" />
-                            <path d="M12 20h.01" />
-                            <path d="M16.2 16.2a6 6 0 0 0 0-8.4" />
-                            <path d="M19.1 19.1a10 10 0 0 0 0-14.2" />
-                          </svg>
-                          <span class="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full border-2 border-white" :class="realtimeDotClass"></span>
-                        </div>
-                        <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line">
-                          {{ realtimeTooltip }}
-                        </div>
-                      </div>
-
-                      <div class="relative group">
-                        <div class="h-8 w-8 rounded-xl flex items-center justify-center text-gray-700" :title="cloudTooltip" aria-label="云端更新时间">
-                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 6v6l4 2" />
-                          </svg>
-                        </div>
-                        <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line">
-                          {{ cloudTooltip }}
-                        </div>
-                      </div>
-
-                      <div class="relative group">
-                        <div class="h-8 w-8 rounded-xl flex items-center justify-center" :class="syncPending > 0 ? 'text-brand-orange' : 'text-gray-700'" :title="pendingTooltip" aria-label="待同步队列">
-                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 19V5" />
-                            <path d="M5 12l7 7 7-7" />
-                          </svg>
-                          <span v-if="syncPending > 0" class="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-brand-orange text-white text-[10px] font-black flex items-center justify-center">
-                            {{ syncPending }}
-                          </span>
-                        </div>
-                        <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line">
-                          {{ pendingTooltip }}
-                        </div>
-                      </div>
-
-                      <button v-if="canEdit" class="relative group h-8 w-8 rounded-xl flex items-center justify-center text-gray-700 hover:bg-white/60 transition-colors" :disabled="syncInProgress" @click="triggerManualSync" :title="syncInProgress ? '同步中…' : '手动触发同步'" aria-label="手动同步">
-                        <svg class="w-4 h-4" :class="syncInProgress ? 'animate-spin' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M21 12a9 9 0 1 1-3-6.7" />
-                          <path d="M21 3v6h-6" />
-                        </svg>
-                        <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line">
-                          手动触发同步\n当前队列：{{ syncPending }}\n上次同步：{{ syncLastSyncShort }}
-                        </div>
-                      </button>
-
-                      <div class="relative group" v-if="syncError">
-                        <div class="h-8 w-8 rounded-xl flex items-center justify-center text-red-500" :title="syncErrorTooltip" aria-label="同步失败">
-                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 9v4" />
-                            <path d="M12 17h.01" />
-                            <path d="M10.3 3.4h3.4L22 18.6H2Z" />
-                          </svg>
-                        </div>
-                        <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-72 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line">
-                          {{ syncErrorTooltip }}
-                        </div>
-                      </div>
-
-                      <div class="relative group">
-                        <div class="h-8 w-8 rounded-xl flex items-center justify-center" :class="activeShiftMissing ? 'text-red-500' : 'text-gray-700'" :title="activeShiftTooltip" aria-label="当前班次状态">
-                          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 3h6" />
-                            <path d="M10 9h4" />
-                            <path d="M12 21a8 8 0 0 0 0-16" />
-                            <path d="M4 13a8 8 0 0 1 8-8" />
-                          </svg>
-                        </div>
-                        <div class="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-72 -translate-x-1/2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-700 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-pre-line">
-                          {{ activeShiftTooltip }}
-                        </div>
-                      </div>
-                    </div>
-                   
+                    
                     <!-- Stats -->
                     <div class="flex items-center bg-white/20 backdrop-blur-md p-1 rounded-2xl border border-white/40 h-9 gap-3 px-3 shadow-inner max-w-full overflow-x-auto whitespace-nowrap">
                         <div class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/40 transition-all cursor-help group/stat">

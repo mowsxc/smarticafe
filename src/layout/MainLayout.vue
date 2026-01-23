@@ -13,6 +13,7 @@ import StandardLoginPanel from '../components/StandardLoginPanel.vue';
 import QuickLoginPanel from '../components/QuickLoginPanel.vue';
 import LinkSettingsModal from '../components/LinkSettingsModal.vue';
 import ModernNotification from '../components/ui/ModernNotification.vue';
+import { getSyncService } from '../services/supabase/client';
 
 // Custom Links
 const CUSTOM_URLS_KEY = 'smarticafe_custom_urls';
@@ -425,10 +426,15 @@ let timer: any = null;
 onMounted(() => {
   updateTime();
   timer = setInterval(updateTime, 1000);
+
+  void refreshGlobalStatus();
+  if (globalStatusTimer) clearInterval(globalStatusTimer);
+  globalStatusTimer = setInterval(refreshGlobalStatus, 3000);
 });
 
 onUnmounted(() => {
   if (timer) clearInterval(timer);
+  if (globalStatusTimer) clearInterval(globalStatusTimer);
   // Cleanup all webviews
   for (const [_, wv] of webviewMap.entries()) {
     try { wv.close(); } catch(_) {}
@@ -469,6 +475,42 @@ const canShowNavItem = (item: any): boolean => {
 // ===== Navigation Active State =====
 const navItemHover = ref<string | null>(null);
 const avatarHover = ref(false);
+
+const showGlobalStatusModal = ref(false);
+const globalSyncPending = ref<number>(0);
+const globalSyncLastSync = ref<string>('never');
+const globalSyncError = ref<string | null>(null);
+const globalSyncInProgress = ref<boolean>(false);
+let globalStatusTimer: any = null;
+
+const globalSyncLastSyncShort = computed(() => {
+  const v = String(globalSyncLastSync.value || '');
+  if (!v || v === 'never') return 'never';
+  return v.replace('T', ' ').replace('Z', '').slice(0, 19);
+});
+
+const refreshGlobalStatus = async () => {
+  try {
+    const svc = getSyncService();
+    const s = svc.getStatus();
+    globalSyncPending.value = Number(s.pendingChanges) || 0;
+    globalSyncLastSync.value = String(s.lastSync || 'never');
+    globalSyncError.value = s.syncError ? String(s.syncError) : null;
+    globalSyncInProgress.value = svc.isSyncing();
+  } catch {
+    // ignore
+  }
+};
+
+const triggerGlobalSync = async () => {
+  try {
+    globalSyncInProgress.value = true;
+    const svc = getSyncService();
+    await svc.forceSync();
+  } finally {
+    await refreshGlobalStatus();
+  }
+};
 
 const isNavActive = (item: any): boolean => {
   if (item.external) {
@@ -627,6 +669,32 @@ const handleNavClick = async (item: any) => {
             >●</span>
           </div>
 
+          <button
+            class="relative w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center"
+            @click="showGlobalStatusModal = true"
+            :title="globalSyncError ? '同步异常' : (globalSyncPending > 0 ? '有待同步数据' : '同步正常')"
+            aria-label="全站状态总览"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              :class="globalSyncError ? 'text-red-500' : (globalSyncPending > 0 ? 'text-brand-orange' : 'text-gray-500')"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+
+            <span
+              v-if="globalSyncPending > 0"
+              class="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-brand-orange text-white text-[10px] font-black flex items-center justify-center"
+            >
+              {{ globalSyncPending }}
+            </span>
+
+            <span
+              v-if="globalSyncError"
+              class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white bg-red-500"
+            ></span>
+          </button>
+
           <!-- Divider -->
           <div class="w-px h-8 bg-gray-200 rounded-full"></div>
 
@@ -741,6 +809,65 @@ const handleNavClick = async (item: any) => {
         </router-view>
       </div>
     </main>
+
+    <Transition name="modal">
+      <div
+        v-if="showGlobalStatusModal"
+        class="fixed inset-0 z-100 flex items-center justify-center p-4 modal-backdrop"
+        @click.self="showGlobalStatusModal = false"
+      >
+        <div class="w-full max-w-[520px] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex flex-col">
+              <span class="text-[14px] font-bold text-gray-800">系统状态总览</span>
+              <span class="text-[10px] text-gray-400">Sync / Network / Queue</span>
+            </div>
+            <button
+              class="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center"
+              @click="showGlobalStatusModal = false"
+              aria-label="关闭"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="px-5 py-4 space-y-3 text-[12px] text-gray-700">
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">待同步队列</span>
+              <span class="font-black" :class="globalSyncPending > 0 ? 'text-brand-orange' : 'text-gray-700'">{{ globalSyncPending }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-500">上次同步</span>
+              <span class="font-mono text-[11px] text-gray-700">{{ globalSyncLastSyncShort }}</span>
+            </div>
+            <div class="flex items-start justify-between gap-4">
+              <span class="text-gray-500 shrink-0">同步状态</span>
+              <div class="flex-1 text-right">
+                <span v-if="globalSyncInProgress" class="font-bold text-brand-orange">同步中…</span>
+                <span v-else-if="globalSyncError" class="font-bold text-red-500" :title="globalSyncError">同步失败</span>
+                <span v-else class="font-bold text-emerald-600">正常</span>
+              </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end gap-2">
+              <button
+                class="h-10 px-4 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
+                @click="showGlobalStatusModal = false"
+              >
+                关闭
+              </button>
+              <button
+                class="h-10 px-4 rounded-xl bg-brand-orange text-white font-bold hover:bg-orange-600 transition-colors disabled:opacity-50"
+                :disabled="globalSyncInProgress"
+                @click="triggerGlobalSync"
+              >
+                {{ globalSyncInProgress ? '同步中…' : '重试同步' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Meituan Drawer Backdrop -->
     <Transition name="fade">
