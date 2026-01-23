@@ -14,8 +14,16 @@ export const useAppStore = defineStore('app', () => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   };
 
+  const defaultShiftByNow = () => {
+    const d = new Date();
+    const minutes = d.getHours() * 60 + d.getMinutes();
+    const dayStart = 8 * 60;
+    const dayEnd = 20 * 60;
+    return minutes >= dayStart && minutes < dayEnd ? '白班' : '晚班';
+  };
+
   const currentDate = ref(state?.currentDate || todayYmd());
-  const currentShift = ref(state?.currentShift || '白班');
+  const currentShift = ref(state?.currentShift || defaultShiftByNow());
   const currentEmployee = ref(state?.currentEmployee || '');
   
   const systemStatus = ref('online');

@@ -831,12 +831,20 @@ const todayYmd = () => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
+const defaultShiftByNow = () => {
+  const d = new Date();
+  const minutes = d.getHours() * 60 + d.getMinutes();
+  const dayStart = 8 * 60;
+  const dayEnd = 20 * 60;
+  return minutes >= dayStart && minutes < dayEnd ? '白班' : '晚班';
+};
+
 const openStartShiftModal = () => {
   const user = auth.currentUser;
   const defaultEmployee = String(user?.username || '').trim() || String(app.currentEmployee || '').trim();
   startShiftForm.value = {
     date: todayYmd(),
-    shift: '白班',
+    shift: defaultShiftByNow(),
     employee: defaultEmployee || '管理员',
   };
   showStartShiftModal.value = true;
