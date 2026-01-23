@@ -193,6 +193,7 @@ pub fn finance_monthly_report(app: AppHandle, token: String, month: String) -> R
 #[tauri::command]
 pub fn finance_dividend_report(app: AppHandle, token: String, month: String) -> Result<DividendReport, String> {
     let conn = open_db(&app)?;
+    // Validate user
     let _ = auth_resolve_account_id(&token).ok_or_else(|| String::from("unauthorized"))?;
 
     let month_start = format!("{}-01", month);
@@ -213,21 +214,36 @@ pub fn finance_dividend_report(app: AppHandle, token: String, month: String) -> 
     let total_profit = total_income - total_expense;
 
     let mut shareholders: Vec<ShareholderDividend> = Vec::new();
+    // Fetch proxy_host and pick_name as well
     let mut stmt = conn.prepare(
-        "SELECT display_name, equity FROM auth_accounts WHERE role = 'boss' AND is_active = 1 ORDER BY equity DESC, display_name ASC",
+        "SELECT display_name, equity, pick_name, proxy_host, is_hidden 
+         FROM auth_accounts 
+         WHERE role = 'boss' AND is_active = 1 
+         ORDER BY equity DESC, display_name ASC",
     ).map_err(|e| format!("prepare: {e}"))?;
 
     let rows = stmt.query_map([], |row| {
-        Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))
+        Ok((
+            row.get::<_, String>(0)?, // display_name
+            row.get::<_, f64>(1)?,    // equity
+            row.get::<_, String>(2)?, // pick_name
+            row.get::<_, Option<String>>(3)?, // proxy_host
+        ))
     }).map_err(|e| format!("query: {e}"))?;
 
     for r in rows {
-        let (name, equity) = r.map_err(|e| format!("row: {e}"))?;
+        let (name, equity, pick_name, proxy_host) = r.map_err(|e| format!("row: {e}"))?;
         let equity_safe = if equity.is_finite() && equity > 0.0 { equity } else { 0.0 };
+        
+        // Correct calculation: equity is percentage (e.g. 25.0 means 25%)
+        let dividend_amount = total_profit * (equity_safe / 100.0);
+        
         shareholders.push(ShareholderDividend {
             name,
             equity: equity_safe,
-            dividend: total_profit * equity_safe,
+            dividend: dividend_amount,
+            pick_name,
+            proxy_host,
         });
     }
 

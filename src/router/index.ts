@@ -50,6 +50,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: '财务管理', icon: '💼', bossOnly: true, permission: 'view_finance' },
       },
       {
+        path: 'dividend',
+        name: 'Dividend',
+        component: () => import('../views/DividendView.vue'),
+        meta: { requiresAuth: true, title: '分红报表', icon: '💸', bossOnly: true, permission: 'view_finance' },
+      },
+      {
         path: 'users',
         name: 'Users',
         component: UsersView,
@@ -200,6 +206,7 @@ export const mainNavigation = [
   { name: 'ShiftRecords', label: '交班记录', icon: '📋', path: '/shift-records', permission: 'view_shift' },
   { name: 'Products', label: '商品管理', icon: '📦', path: '/products', adminOnly: true, permission: 'view_products' },
   { name: 'Finance', label: '财务管理', icon: '💼', path: '/finance', bossOnly: true, permission: 'view_finance' },
+  { name: 'Dividend', label: '分红报表', icon: '💸', path: '/dividend', bossOnly: true, permission: 'view_finance' },
   { name: 'Users', label: '用户管理', icon: '👥', path: '/users', adminOnly: true, permission: 'view_users' },
   { name: 'Permissions', label: '权限管理', icon: '🔐', path: '/permissions', adminOnly: true, permission: 'view_permissions' },
   { name: 'Settings', label: '系统设置', icon: '⚙️', path: '/settings', adminOnly: true, permission: 'view_settings' },

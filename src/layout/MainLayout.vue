@@ -617,7 +617,7 @@ const handleNavClick = async (item: any) => {
           <div class="nav-divider w-px h-8 bg-linear-to-b from-transparent via-gray-300 to-transparent mx-3 rounded-full"></div>
 
           <!-- Navigation -->
-          <nav class="nav flex items-center gap-1">
+          <nav class="nav flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[40vw] md:max-w-none pr-4">
             <template v-for="item in mainNavigation" :key="item.path || item.url">
               <!-- Nav Item (Internal or External) -->
               <button 
@@ -765,7 +765,7 @@ const handleNavClick = async (item: any) => {
 
           <!-- User Info -->
           <div
-            class="flex items-center gap-1.5 text-[11px] cursor-pointer select-none hover:opacity-90 transition-opacity"
+            class="hidden md:flex items-center gap-1.5 text-[11px] cursor-pointer select-none hover:opacity-90 transition-opacity"
             @click="openLoginPanel"
             title="点击打开登录"
           >

@@ -158,6 +158,8 @@ const mode = ref<'handover' | 'sales'>('handover');
 const loading = ref(true);
 const products = ref<Product[]>([]);
 const searchQuery = ref('');
+const showMobileCart = ref(false); // Mobile Cart State
+const cartTotalItems = computed(() => cart.items.reduce((s, i) => s + i.quantity, 0));
 
 // --- Handover (Sales) Module State ---
 interface HandoverRow extends Product {
@@ -2391,8 +2393,8 @@ onBeforeUnmount(() => {
     </div>
 
       <!-- Sales Mode (售卖模式) -->
-      <div v-else key="sales" class="flex-1 grid grid-cols-12 gap-4 overflow-hidden">
-        <div class="col-span-8 flex flex-col gap-3 overflow-hidden">
+      <div v-else key="sales" class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 overflow-hidden relative">
+        <div class="col-span-1 md:col-span-8 lg:col-span-9 flex flex-col gap-3 overflow-hidden">
           <div class="flex-1 overflow-auto pr-1 custom-scrollbar">
             <div v-if="loading" class="flex flex-col items-center justify-center h-full text-gray-300 gap-4">
                <div class="w-12 h-12 border-[3px] border-gray-100 border-t-brand-orange rounded-full animate-spin shadow-lg"></div>
@@ -2408,7 +2410,9 @@ onBeforeUnmount(() => {
             </TransitionGroup>
           </div>
         </div>
-        <div class="col-span-4 flex flex-col overflow-hidden glass-card rounded-[32px] border border-white/60 relative shadow-2xl">
+        
+        <!-- Desktop Cart Column -->
+        <div class="hidden md:flex md:col-span-4 lg:col-span-3 flex-col overflow-hidden glass-card rounded-[32px] border border-white/60 relative shadow-2xl">
             <!-- Decorative Glow -->
             <div class="absolute -top-20 -right-20 w-60 h-60 bg-brand-orange/20 blur-[100px] rounded-full pointer-events-none"></div>
             <div class="h-16 border-b border-gray-100 flex items-center justify-between px-6 shrink-0 bg-white shadow-sm">
@@ -2632,6 +2636,61 @@ onBeforeUnmount(() => {
       @close="showSuccessorPicker = false; pendingSnapshotHtml = ''; pendingSnapshotInfo = ''"
       @select-successor="handleSelectSuccessor"
     />
+
+    <!-- Mobile Cart FAB (Only in Sales Mode on Mobile) -->
+    <Transition name="scale">
+      <button
+        v-if="mode === 'sales'"
+        @click="showMobileCart = true"
+        class="md:hidden fixed bottom-6 right-6 z-40 w-16 h-16 rounded-full bg-brand-orange text-white shadow-2xl flex items-center justify-center active:scale-95 transition-transform"
+      >
+        <div class="relative">
+             <span class="text-2xl">🛒</span>
+             <span v-if="cartTotalItems > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                {{ cartTotalItems }}
+             </span>
+        </div>
+      </button>
+    </Transition>
+
+    <!-- Mobile Cart Overlay -->
+    <Transition name="slide-up">
+      <div v-if="showMobileCart && mode === 'sales'" class="fixed inset-0 z-50 flex flex-col bg-gray-100 md:hidden">
+          <!-- Header -->
+          <div class="h-14 bg-white px-4 flex items-center justify-between border-b border-gray-100 shrink-0">
+             <span class="font-black text-lg text-gray-800">购物车 ({{ cartTotalItems }})</span>
+             <button @click="showMobileCart = false" class="text-gray-400 font-bold p-2">关闭</button>
+          </div>
+          
+          <!-- Cart Items -->
+          <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
+               <CartItem v-for="item in cart.items" :key="item.id" :item="item" @add="cart.addToCart" @remove="cart.removeFromCart" />
+               <div v-if="cart.items.length === 0" class="flex-1 flex flex-col items-center justify-center opacity-40">
+                  <span class="text-4xl mb-4">🛒</span>
+                  <span class="text-xs font-black uppercase tracking-widest text-gray-400">Empty Cart</span>
+               </div>
+          </div>
+
+          <!-- Total & Checkout -->
+          <div class="p-6 bg-white border-t border-gray-100 shrink-0 pb-safe">
+             <div class="flex justify-between items-center mb-4">
+                 <span class="text-xs font-black text-gray-400 uppercase">Total Payable</span>
+                 <div class="flex items-baseline gap-1">
+                    <span class="text-sm font-bold text-gray-400">¥</span>
+                    <span class="text-2xl font-black text-gray-900">{{ formatAuto(cart.totalAmount) }}</span>
+                 </div>
+             </div>
+             
+             <button 
+                  @click="handleInstantCheckout" 
+                  :disabled="cart.items.length === 0" 
+                  class="w-full h-14 bg-brand-dark text-white rounded-xl font-black text-lg shadow-xl active:scale-95 transition-transform disabled:opacity-50"
+             >
+                 立即结算
+             </button>
+          </div>
+      </div>
+    </Transition>
 
   </div>
 </template>

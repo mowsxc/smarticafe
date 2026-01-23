@@ -350,6 +350,12 @@ async fn api_rpc_handler(
                 Err(e) => Err(ApiResponse::err(e)),
              }
         },
+        "debug_seed_full_data" => {
+            match crate::commands::auth::debug_seed_full_data(state.app.clone()) {
+                Ok(msg) => Ok(ApiResponse::ok(Value::String(msg))),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
 
         _ => Err(ApiResponse::err(format!("unsupported_rpc_cmd: {}", cmd))),
     }

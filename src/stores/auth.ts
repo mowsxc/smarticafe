@@ -17,6 +17,7 @@ export interface User {
   role: 'admin' | 'boss' | 'employee';
   displayName: string;
   token?: string;
+  equity?: number;
 }
 
 type TauriAuthSession = {
@@ -43,7 +44,6 @@ type BootstrapAdminInput = {
 
 export const useAuthStore = defineStore('auth', () => {
   const settingsStore = useSettingsStore();
-  settingsStore.init();
 
   // Init from storage
   const storedUser = localStorage.getItem('auth_user');
@@ -90,7 +90,6 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const syncService = getSyncService();
-      // 获取完整的账号信息用于同步到云端
       const accounts = await tauriCmd<any[]>('auth_accounts_list', { token: user.token });
       const myAccount = accounts.find(a => a.id === user.id);
       if (myAccount) {
@@ -137,7 +136,6 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser.value = user;
     saveToStorage(user);
 
-    // Sync login to Supabase
     try {
       const syncService = getSyncService();
       await syncService.enqueue({
@@ -154,8 +152,7 @@ export const useAuthStore = defineStore('auth', () => {
       });
       await syncService.sync();
     } catch (error) {
-      console.error('Failed to sync login to Supabase:', error);
-      // Continue offline even if sync fails
+       // ignore
     }
   };
 
@@ -174,11 +171,11 @@ export const useAuthStore = defineStore('auth', () => {
       role,
       displayName: session?.name || pickName,
       token: session?.token,
+      equity: session?.equity
     };
     currentUser.value = user;
     saveToStorage(user);
 
-    // Sync login to Supabase
     try {
       const syncService = getSyncService();
       await syncService.enqueue({
@@ -195,8 +192,7 @@ export const useAuthStore = defineStore('auth', () => {
       });
       await syncService.sync();
     } catch (error) {
-      console.error('Failed to sync login to Supabase:', error);
-      // Continue offline even if sync fails
+       // ignore
     }
   };
 
@@ -207,7 +203,6 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser.value = null;
     localStorage.removeItem('auth_user');
 
-    // Sync logout to Supabase
     if (userId) {
       try {
         const syncService = getSyncService();
@@ -221,8 +216,7 @@ export const useAuthStore = defineStore('auth', () => {
         });
         await syncService.sync();
       } catch (error) {
-        console.error('Failed to sync logout to Supabase:', error);
-        // Continue offline even if sync fails
+         // ignore
       }
     }
   };
@@ -274,7 +268,6 @@ export const useAuthStore = defineStore('auth', () => {
     throw new Error('用户名不存在');
   };
 
-  // 获取角色显示的各种独立属性
   const userProfile = computed(() => {
     if (!currentUser.value) return null;
     return {
@@ -285,16 +278,12 @@ export const useAuthStore = defineStore('auth', () => {
     };
   });
 
-  // 检查权限
   const can = (action: string) => {
     if (!currentUser.value) return false;
     
     const role = currentUser.value.role;
-    
-    // 超管拥有所有权限
     if (role === 'admin') return true;
     
-    // 股东权限
     if (role === 'boss') {
       const bossPermissions = [
         'view_cashier', 
@@ -308,7 +297,6 @@ export const useAuthStore = defineStore('auth', () => {
       return bossPermissions.includes(action);
     }
     
-    // 员工权限
     if (role === 'employee') {
       const employeePermissions = [
         'view_cashier', 
@@ -320,6 +308,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
     
     return false;
+  };
+  
+  // NEW: Update Profile Action
+  const updateProfile = async (input: { id: string, display_name?: string, equity?: number, proxy_host?: string, salary_base?: number, is_hidden?: boolean, profile?: string }) => {
+      if (!currentUser.value?.token) return;
+      await tauriCmd('auth_account_update_profile', { token: currentUser.value.token, input });
+      // If updating self, update local store
+      if (input.id === currentUser.value.id) {
+          if (input.display_name) currentUser.value.displayName = input.display_name;
+          if (input.equity !== undefined) currentUser.value.equity = input.equity;
+          saveToStorage(currentUser.value);
+      }
   };
 
   return {
@@ -335,5 +335,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     userProfile,
     can,
+    updateProfile,
   };
 });

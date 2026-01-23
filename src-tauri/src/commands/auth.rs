@@ -140,6 +140,20 @@ pub fn auth_pick_list(app: AppHandle) -> Result<AuthPickList, String> {
 }
 
 #[tauri::command]
+pub fn auth_update_brand_settings(app: AppHandle, token: String, input: BrandSettings) -> Result<(), String> {
+    let conn = open_db(&app)?;
+    require_admin(&conn, &token)?;
+
+    let now = crate::db::now_ts()?;
+    conn.execute("INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('brand_name', ?1, ?2)", params![input.brand_name.trim(), now])
+        .map_err(|e| format!("update brand_name: {e}"))?;
+    conn.execute("INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('store_name', ?1, ?2)", params![input.store_name.trim(), now])
+        .map_err(|e| format!("update store_name: {e}"))?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn auth_accounts_list(app: AppHandle, token: String) -> Result<Vec<AuthAccountRow>, String> {
     let conn = open_db(&app)?;
     let token = token.trim().to_string();
@@ -155,12 +169,13 @@ pub fn auth_accounts_list(app: AppHandle, token: String) -> Result<Vec<AuthAccou
         .map_err(|e| format!("actor query: {e}"))?;
     let (actor_role, actor_name) = actor.ok_or_else(|| String::from("unauthorized"))?;
 
+    // Extended query
     let sql = if actor_role == "admin" {
-        "SELECT id, pick_name, display_name, role, identity, equity, is_active FROM auth_accounts ORDER BY pick_name ASC, display_name ASC"
-            .to_string()
+        "SELECT id, pick_name, display_name, role, identity, equity, is_active, proxy_host, is_hidden, salary_base, profile 
+         FROM auth_accounts ORDER BY pick_name ASC, display_name ASC".to_string()
     } else {
-        "SELECT id, pick_name, display_name, role, identity, equity, is_active FROM auth_accounts WHERE id = ?1 ORDER BY pick_name ASC, display_name ASC"
-            .to_string()
+        "SELECT id, pick_name, display_name, role, identity, equity, is_active, proxy_host, is_hidden, salary_base, profile 
+         FROM auth_accounts WHERE id = ?1 ORDER BY pick_name ASC, display_name ASC".to_string()
     };
 
     let mut out: Vec<AuthAccountRow> = Vec::new();
@@ -168,6 +183,9 @@ pub fn auth_accounts_list(app: AppHandle, token: String) -> Result<Vec<AuthAccou
         let mut stmt = conn.prepare(&sql).map_err(|e| format!("prepare: {e}"))?;
         let rows = stmt
             .query_map([], |r| {
+                let raw_profile: Option<String> = r.get(10)?;
+                let profile = raw_profile.map(|p| crate::cipher::decrypt_data(&p));
+                
                 Ok(AuthAccountRow {
                     id: r.get(0)?,
                     pick_name: r.get(1)?,
@@ -176,6 +194,10 @@ pub fn auth_accounts_list(app: AppHandle, token: String) -> Result<Vec<AuthAccou
                     identity: r.get(4)?,
                     equity: r.get(5)?,
                     is_active: r.get::<_, i64>(6)? != 0,
+                    proxy_host: r.get(7)?,
+                    is_hidden: r.get::<_, i64>(8).unwrap_or(0) != 0,
+                    salary_base: r.get::<_, f64>(9).unwrap_or(0.0),
+                    profile,
                 })
             })
             .map_err(|e| format!("query_map: {e}"))?;
@@ -186,6 +208,9 @@ pub fn auth_accounts_list(app: AppHandle, token: String) -> Result<Vec<AuthAccou
         let mut stmt = conn.prepare(&sql).map_err(|e| format!("prepare: {e}"))?;
         let rows = stmt
             .query_map([actor_id], |r| {
+                let raw_profile: Option<String> = r.get(10)?;
+                let profile = raw_profile.map(|p| crate::cipher::decrypt_data(&p));
+
                 Ok(AuthAccountRow {
                     id: r.get(0)?,
                     pick_name: r.get(1)?,
@@ -194,6 +219,10 @@ pub fn auth_accounts_list(app: AppHandle, token: String) -> Result<Vec<AuthAccou
                     identity: r.get(4)?,
                     equity: r.get(5)?,
                     is_active: r.get::<_, i64>(6)? != 0,
+                    proxy_host: r.get(7)?,
+                    is_hidden: r.get::<_, i64>(8).unwrap_or(0) != 0,
+                    salary_base: r.get::<_, f64>(9).unwrap_or(0.0),
+                    profile,
                 })
             })
             .map_err(|e| format!("query_map: {e}"))?;
@@ -277,6 +306,52 @@ pub fn auth_bootstrap_admin(app: AppHandle, input: AuthBootstrapAdminInput) -> R
         equity: 0.0,
         token,
     })
+}
+
+#[tauri::command]
+pub fn debug_seed_full_data(app: AppHandle) -> Result<String, String> {
+    let conn = open_db(&app)?;
+    let now = now_ts()?;
+    
+    // 1. Admin: Mo Jian (laoban)
+    let admin_salt = Uuid::new_v4().to_string();
+    let admin_hash = pass_hash(&admin_salt, "admin"); // password: admin
+    let _ = conn.execute(
+        "INSERT OR IGNORE INTO auth_accounts(id, pick_name, pass_salt, pass_hash, role, identity, display_name, equity, is_active, created_at, updated_at)
+         VALUES('u_mojian', 'laoban', ?1, ?2, 'admin', 'admin', '莫健', 25.0, 1, ?3, ?3)",
+        params![admin_salt, admin_hash, now],
+    );
+
+    // 2. Shareholder: Zhu Xiaopei
+    let zhu_salt = Uuid::new_v4().to_string();
+    let zhu_hash = pass_hash(&zhu_salt, "zhuxiaopei");
+    let _ = conn.execute(
+        "INSERT OR IGNORE INTO auth_accounts(id, pick_name, pass_salt, pass_hash, role, identity, display_name, equity, is_active, created_at, updated_at)
+         VALUES('u_zhu', 'zhuxiaopei', ?1, ?2, 'boss', 'shareholder', '朱晓培', 30.0, 1, ?3, ?3)",
+        params![zhu_salt, zhu_hash, now],
+    );
+
+    // 3. Hidden Proxy Shareholder: Cui Guoli (Proxied by laoban)
+    let cui_profile = r#"{"idCard":"110101199001011234","bankCard":"6222021234567890","bankName":"招商银行"}"#;
+    let cui_enc = crate::cipher::encrypt_data(cui_profile);
+    let cui_salt = Uuid::new_v4().to_string();
+    let cui_hash = pass_hash(&cui_salt, "cuiguoli");
+    let _ = conn.execute(
+        "INSERT OR IGNORE INTO auth_accounts(id, pick_name, pass_salt, pass_hash, role, identity, display_name, equity, proxy_host, is_hidden, salary_base, profile, is_active, created_at, updated_at)
+         VALUES('u_cui', 'cuiguoli', ?1, ?2, 'boss', 'shareholder', '崔国丽', 20.0, 'laoban', 1, 0, ?3, 1, ?4, ?4)",
+        params![cui_salt, cui_hash, cui_enc, now],
+    );
+
+    // 4. Hidden Proxy Shareholder: Lu Qiumian (Proxied by laoban)
+    let lu_salt = Uuid::new_v4().to_string();
+    let lu_hash = pass_hash(&lu_salt, "luqiumian");
+    let _ = conn.execute(
+        "INSERT OR IGNORE INTO auth_accounts(id, pick_name, pass_salt, pass_hash, role, identity, display_name, equity, proxy_host, is_hidden, salary_base, profile, is_active, created_at, updated_at)
+         VALUES('u_lu', 'luqiumian', ?1, ?2, 'boss', 'shareholder', '路秋勉', 13.0, 'laoban', 1, 0, NULL, 1, ?3, ?3)",
+        params![lu_salt, lu_hash, now],
+    );
+
+    Ok("Data Seeded Successfully".into())
 }
 
 #[tauri::command]
@@ -634,17 +709,79 @@ pub fn auth_get_brand_settings(app: AppHandle) -> Result<BrandSettings, String> 
 }
 
 #[tauri::command]
-pub fn auth_update_brand_settings(app: AppHandle, token: String, input: BrandSettings) -> Result<(), String> {
+pub fn auth_account_update_profile(app: AppHandle, token: String, input: AuthAccountUpdateInput) -> Result<(), String> {
     let conn = open_db(&app)?;
-    require_admin(&conn, &token)?;
+    // Only Admin can update sensitive profiles like equity/salary
+    let _ = require_admin(&conn, &token)?;
 
+    let id = input.id.trim().to_string();
+    if id.is_empty() { return Err("invalid_id".into()); }
+    
     let now = crate::db::now_ts()?;
-    conn.execute("INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('brand_name', ?1, ?2)", params![input.brand_name.trim(), now])
-        .map_err(|e| format!("update brand_name: {e}"))?;
-    conn.execute("INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('store_name', ?1, ?2)", params![input.store_name.trim(), now])
-        .map_err(|e| format!("update store_name: {e}"))?;
+    
+    let mut sql = "UPDATE auth_accounts SET ".to_string();
+    let mut updates = vec![];
+    let mut params_vals: Vec<Box<dyn rusqlite::ToSql>> = vec![];
+    
+    // Always update updated_at
+    updates.push("updated_at = ?");
+    params_vals.push(Box::new(now));
 
+    // Optional fields
+    if let Some(dn) = input.display_name {
+        updates.push("display_name = ?");
+        params_vals.push(Box::new(dn));
+    }
+    if let Some(eq) = input.equity {
+        updates.push("equity = ?");
+        params_vals.push(Box::new(eq));
+    }
+    if let Some(ph) = input.proxy_host {
+        updates.push("proxy_host = ?");
+        params_vals.push(Box::new(ph));
+    }
+    if let Some(sb) = input.salary_base {
+        updates.push("salary_base = ?");
+        params_vals.push(Box::new(sb));
+    }
+    if let Some(hd) = input.is_hidden {
+        updates.push("is_hidden = ?");
+        params_vals.push(Box::new(if hd { 1 } else { 0 }));
+    }
+    if let Some(prof) = input.profile {
+        // ENCRYPT HERE
+        let encrypted = crate::cipher::encrypt_data(&prof);
+        updates.push("profile = ?");
+        params_vals.push(Box::new(encrypted));
+    }
+    
+    if updates.len() == 1 {
+        return Ok(()); // Nothing to update
+    }
+    
+    sql.push_str(&updates.join(", "));
+    sql.push_str(" WHERE id = ?");
+    params_vals.push(Box::new(id));
+    
+    let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
+    
+    // Convert Vec<Box<dyn ToSql>> to slice of refs
+    let params_refs: Vec<&dyn rusqlite::ToSql> = params_vals.iter().map(|p| p.as_ref()).collect();
+    
+    stmt.execute(&*params_refs).map_err(|e| e.to_string())?;
+    
     Ok(())
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct AuthAccountUpdateInput {
+    pub id: String,
+    pub display_name: Option<String>,
+    pub equity: Option<f64>,
+    pub proxy_host: Option<String>,
+    pub salary_base: Option<f64>,
+    pub is_hidden: Option<bool>,
+    pub profile: Option<String>, // JSON string
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -680,4 +817,19 @@ pub struct OperationLogRow {
     pub module: String,
     pub time: String,
     pub ip: String,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct AuthAccountRow {
+    pub id: String,
+    pub pick_name: String,
+    pub display_name: String,
+    pub role: String,
+    pub identity: String,
+    pub equity: f64,
+    pub is_active: bool,
+    pub proxy_host: Option<String>,
+    pub is_hidden: bool,
+    pub salary_base: f64,
+    pub profile: Option<String>,
 }

@@ -7,6 +7,7 @@ pub mod state;
 pub mod commands;
 pub mod http_server;
 pub mod constants;
+pub mod cipher;
 
 use crate::commands::*;
 
@@ -42,6 +43,7 @@ pub fn run() {
             auth_employee_login,
             auth_bootstrap_required,
             auth_bootstrap_admin,
+            debug_seed_full_data,
             auth_pick_list,
             auth_accounts_list,
             auth_set_password,
@@ -55,6 +57,7 @@ pub fn run() {
             operation_logs_list,
             auth_get_brand_settings,
             auth_update_brand_settings,
+            auth_account_update_profile,
 
             // Product Commands
             products_list,

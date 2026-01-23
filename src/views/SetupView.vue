@@ -142,6 +142,12 @@
                   {{ errorMsg }}
               </div>
 
+               <!-- Debug Tool -->
+              <div class="absolute top-2 left-2 opacity-10 hover:opacity-100 transition-opacity flex gap-2">
+                 <button @click="injectTest" class="text-[10px] text-gray-500 hover:text-red-500 font-mono border border-gray-200 p-1 rounded">⚠️ Inject Test Data</button>
+                 <button @click="simulateTraffic" class="text-[10px] text-gray-500 hover:text-blue-500 font-mono border border-gray-200 p-1 rounded">⚡ Simulate Rush</button>
+              </div>
+
           </div>
       </div>
   </div>
@@ -152,6 +158,7 @@ import { ref, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useSettingsStore } from '../stores/settings';
+import { tauriCmd } from '../utils/tauri'; // Import tauriCmd
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -169,6 +176,71 @@ const form = reactive({
     brandName: '',
     storeName: '',
 });
+
+// ...
+
+const injectTest = async () => {
+    if(!confirm("Create Full Test Data? (MoJian, CuiGuoli, etc.)")) return;
+    try {
+        await tauriCmd('debug_seed_full_data');
+        alert("✅ Seeded! Please refresh.");
+    } catch(e: any) {
+        alert(e);
+    }
+};
+
+const simulateTraffic = async () => {
+    const count = parseInt(prompt("How many orders?", "50") || "0");
+    if (!count) return;
+    
+    loading.value = true;
+    try {
+        // 1. Get Token (assume seeded Laoban)
+        // Check if we are logged in, or try to login as laoban
+        let token = authStore.currentUser?.token;
+        if (!token) {
+            // Try explicit login for test
+            const session = await tauriCmd<any>('auth_login', { input: { pick_name: 'laoban', password: 'admin' } });
+            token = session.token;
+        }
+
+        // 2. Get Products
+        // Need to use tauriCmd directly as store might be empty
+        const products = await tauriCmd<any[]>('products_list', { token, q: '' });
+        if (products.length === 0) throw new Error("No products found. Inject test data first.");
+
+        const orders = [];
+        for (let i = 0; i < count; i++) {
+            // Random items
+            const items = [];
+            const itemCount = Math.floor(Math.random() * 5) + 1;
+            for (let j = 0; j < itemCount; j++) {
+                const prod = products[Math.floor(Math.random() * products.length)];
+                items.push({ product_id: prod.id, quantity: 1 });
+            }
+            orders.push({
+                token,
+                date_ymd: '2026-01-23', // Force today
+                shift: '白班',
+                employee: 'admin',
+                items
+            });
+        }
+
+        const start = performance.now();
+        // Send in batches of 5 to avoid overwhelming OS network stack if using HTTP, 
+        // though Tauri IPC is fast. Let's try full parallel for "Stress".
+        await Promise.all(orders.map(o => tauriCmd('pos_checkout', o)));
+        
+        const duration = performance.now() - start;
+        alert(`✅ Processed ${count} orders in ${(duration/1000).toFixed(2)}s\nTPS: ${(count / (duration/1000)).toFixed(1)}`);
+
+    } catch (e: any) {
+        alert("Stress Test Failed: " + e.message);
+    } finally {
+        loading.value = false;
+    }
+};
 
 // Step 2: Cloud
 const cloudForm = reactive({

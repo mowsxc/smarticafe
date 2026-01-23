@@ -391,6 +391,19 @@ pub struct ShareholderDividend {
     pub name: String,
     pub equity: f64,
     pub dividend: f64,
+    pub pick_name: String,
+    pub proxy_host: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthAccountUpdateInput {
+    pub id: String,
+    pub display_name: Option<String>,
+    pub equity: Option<f64>,
+    pub proxy_host: Option<String>,
+    pub salary_base: Option<f64>,
+    pub is_hidden: Option<bool>,
+    pub profile: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
