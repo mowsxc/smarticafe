@@ -272,6 +272,7 @@ class SyncService {
   private syncQueue: Map<string, { table: string; operation: string; data: any; timestamp: number }> = new Map()
   private syncInProgress = false
   private lastSyncTime: string | null = null
+  private lastSyncError: string | null = null
 
   // Add operation to sync queue (new API)
   public enqueue(operation: SyncOperation): void {
@@ -283,6 +284,19 @@ class SyncService {
       timestamp: Date.now(),
     })
     this.saveSyncQueue()
+  }
+
+  public isSyncing(): boolean {
+    return this.syncInProgress
+  }
+
+  public getStatus(): SyncStatus {
+    return {
+      lastSync: this.lastSyncTime || 'never',
+      pendingChanges: this.syncQueue.size,
+      isOnline: !!supabase,
+      syncError: this.lastSyncError,
+    }
   }
 
   // Legacy API for backward compatibility
@@ -316,11 +330,12 @@ class SyncService {
   // Sync pending changes to Supabase
   public async sync(): Promise<SyncStatus> {
     if (!supabase) {
+      this.lastSyncError = 'Supabase not configured'
       return {
         lastSync: this.lastSyncTime || 'never',
         pendingChanges: this.syncQueue.size,
         isOnline: false,
-        syncError: 'Supabase not configured',
+        syncError: this.lastSyncError,
       }
     }
 
@@ -329,11 +344,12 @@ class SyncService {
         lastSync: this.lastSyncTime || 'never',
         pendingChanges: this.syncQueue.size,
         isOnline: true,
-        syncError: null,
+        syncError: this.lastSyncError,
       }
     }
 
     this.syncInProgress = true
+    this.lastSyncError = null
 
     try {
       let syncedCount = 0
@@ -396,19 +412,23 @@ class SyncService {
       this.lastSyncTime = new Date().toISOString()
       this.saveSyncQueue()
 
+      this.lastSyncError = errorCount > 0 ? `Failed to sync ${errorCount} items` : null
+
       return {
         lastSync: this.lastSyncTime,
         pendingChanges: this.syncQueue.size,
         isOnline: true,
-        syncError: errorCount > 0 ? `Failed to sync ${errorCount} items` : null,
+        syncError: this.lastSyncError,
       }
     } catch (e) {
       console.error('Sync failed:', e)
+
+      this.lastSyncError = String(e)
       return {
         lastSync: this.lastSyncTime || 'never',
         pendingChanges: this.syncQueue.size,
         isOnline: true,
-        syncError: String(e),
+        syncError: this.lastSyncError,
       }
     } finally {
       this.syncInProgress = false

@@ -39,9 +39,16 @@ const auth = useAuthStore();
 const cart = useCartStore();
 
 const activeShiftCtx = ref<{ dateYmd: string; shift: string; employee: string } | null>(null);
+const activeShiftMissing = ref<boolean>(false);
 
 const realtimeStatus = ref<string>('DISCONNECTED');
 const lastCloudUpdatedAt = ref<string | null>(null);
+
+const syncPending = ref<number>(0);
+const syncLastSync = ref<string>('never');
+const syncError = ref<string | null>(null);
+const syncInProgress = ref<boolean>(false);
+let syncStatusTimer: any = null;
 
 const shiftCtxForUi = computed(() => getShiftCtx());
 const permissionLabel = computed(() => (canEdit.value ? '可编辑' : '只读'));
@@ -64,6 +71,35 @@ const lastCloudUpdatedAtShort = computed(() => {
   if (!v) return '--';
   return v.replace('T', ' ').replace('Z', '').slice(0, 19);
 });
+
+const syncLastSyncShort = computed(() => {
+  const v = String(syncLastSync.value || '');
+  if (!v || v === 'never') return 'never';
+  return v.replace('T', ' ').replace('Z', '').slice(0, 19);
+});
+
+const refreshSyncStatus = async () => {
+  try {
+    const svc = getSyncService();
+    const s = svc.getStatus();
+    syncPending.value = Number(s.pendingChanges) || 0;
+    syncLastSync.value = String(s.lastSync || 'never');
+    syncError.value = s.syncError ? String(s.syncError) : null;
+    syncInProgress.value = svc.isSyncing();
+  } catch {
+    // ignore
+  }
+};
+
+const triggerManualSync = async () => {
+  try {
+    syncInProgress.value = true;
+    const svc = getSyncService();
+    await svc.forceSync();
+  } finally {
+    await refreshSyncStatus();
+  }
+};
 
 const getShiftCtx = () => {
   if (activeShiftCtx.value) return activeShiftCtx.value;
@@ -790,6 +826,8 @@ const buildShiftLiveId = (dateYmd: string, shift: string, employee: string) => {
 const loadActiveShiftFromCloud = async () => {
   if (!supabase) return;
 
+  activeShiftMissing.value = false;
+
   const { data, error } = await (supabase as any)
     .from('shifts')
     .select('date_ymd, shift_type, employee, start_at')
@@ -798,12 +836,18 @@ const loadActiveShiftFromCloud = async () => {
     .limit(1)
     .maybeSingle();
 
-  if (error || !data) return;
+  if (error || !data) {
+    activeShiftMissing.value = true;
+    return;
+  }
 
   const dateYmd = String(data.date_ymd || '').trim();
   const shift = String(data.shift_type || '').trim();
   const employee = String(data.employee || '').trim();
-  if (!dateYmd || !shift || !employee) return;
+  if (!dateYmd || !shift || !employee) {
+    activeShiftMissing.value = true;
+    return;
+  }
 
   activeShiftCtx.value = { dateYmd, shift, employee };
 };
@@ -1166,6 +1210,10 @@ onMounted(async () => {
     await loadShiftLiveFromCloud();
     setupShiftLiveRealtime();
 
+    await refreshSyncStatus();
+    if (syncStatusTimer) clearInterval(syncStatusTimer);
+    syncStatusTimer = setInterval(refreshSyncStatus, 3000);
+
   } catch (e) {
     console.error("Failed to load products:", e);
   } finally {
@@ -1189,6 +1237,13 @@ onBeforeUnmount(() => {
     // ignore
   }
   shiftLiveSubscription = null;
+
+  try {
+    if (syncStatusTimer) clearInterval(syncStatusTimer);
+  } catch {
+    // ignore
+  }
+  syncStatusTimer = null;
 });
 
 const updateHandoverCalc = () => {
@@ -1744,6 +1799,39 @@ onBeforeUnmount(() => {
                         <span class="text-gray-400">云端更新</span>
                         <span class="font-mono text-[10px] text-gray-700">{{ lastCloudUpdatedAtShort }}</span>
                       </div>
+
+                      <div class="w-px h-3 bg-gray-200/60"></div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-400">待同步</span>
+                        <span class="font-black" :class="syncPending > 0 ? 'text-brand-orange' : 'text-gray-600'">{{ syncPending }}</span>
+                      </div>
+                      <div class="w-px h-3 bg-gray-200/60"></div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-400">上次同步</span>
+                        <span class="font-mono text-[10px] text-gray-700">{{ syncLastSyncShort }}</span>
+                      </div>
+                      <div class="w-px h-3 bg-gray-200/60"></div>
+                      <div class="flex items-center gap-2">
+                        <button
+                          v-if="canEdit"
+                          class="h-7 px-3 rounded-lg text-[11px] font-bold border border-gray-200 bg-white/70 hover:bg-white transition-colors"
+                          :disabled="syncInProgress"
+                          @click="triggerManualSync"
+                          title="手动触发云端同步"
+                        >
+                          {{ syncInProgress ? '同步中…' : '重试同步' }}
+                        </button>
+                        <span v-if="syncError" class="text-[11px] font-bold text-red-500" :title="syncError">同步失败</span>
+                      </div>
+                    </div>
+
+                    <div
+                      v-if="activeShiftMissing"
+                      class="flex items-center gap-2 px-3 h-9 rounded-2xl border border-red-200 bg-red-50 text-[11px] font-bold text-red-600"
+                      title="云端未找到当前进行中的班次（shifts.status=active）。请在交班流程创建/开始班次后再进入收银台。"
+                    >
+                      <span>未找到当前班次</span>
+                      <span class="text-red-400 font-normal">（请到交班流程开班/切换）</span>
                     </div>
                    
                     <!-- Stats -->
