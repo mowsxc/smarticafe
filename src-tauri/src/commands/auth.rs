@@ -239,15 +239,32 @@ pub fn auth_accounts_list(app: AppHandle, token: String) -> Result<Vec<AuthAccou
 #[tauri::command]
 pub fn auth_bootstrap_required(app: AppHandle) -> Result<bool, String> {
     let conn = open_db(&app)?;
-    let exists: Option<String> = conn
-        .query_row(
-            "SELECT id FROM auth_accounts WHERE role = 'admin' AND is_active = 1 LIMIT 1",
-            [],
-            |r| r.get(0),
-        )
-        .optional()
-        .map_err(|e| format!("query auth_bootstrap_required: {e}"))?;
-    Ok(exists.is_none())
+    
+    // 检查是否已完成全部初始化步骤 (KV标记)
+    let completed: Option<String> = conn.query_row(
+        "SELECT v FROM kv WHERE k = 'setup_completed'",
+        [],
+        |r| r.get(0)
+    ).optional().map_err(|e| e.to_string())?;
+
+    if let Some(v) = completed {
+        if v == "true" {
+            return Ok(false); // 已完全初始化
+        }
+    }
+
+    Ok(true) // 需要初始化
+}
+
+#[tauri::command]
+pub fn auth_complete_setup(app: AppHandle) -> Result<(), String> {
+    let conn = open_db(&app)?;
+    let now = now_ts()?;
+    conn.execute(
+        "INSERT OR REPLACE INTO kv(k, v, updated_at) VALUES('setup_completed', 'true', ?1)",
+        params![now]
+    ).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -306,6 +323,21 @@ pub fn auth_bootstrap_admin(app: AppHandle, input: AuthBootstrapAdminInput) -> R
         equity: 0.0,
         token,
     })
+}
+
+#[tauri::command]
+pub fn auth_dbg_fully_reset_accounts(app: tauri::AppHandle) -> Result<(), String> {
+    let conn = open_db(&app)?;
+    // 彻底清空所有业务数据和初始化标记
+    conn.execute("DELETE FROM auth_accounts", []).map_err(|e| e.to_string())?;
+    conn.execute("DELETE FROM kv", []).map_err(|e| e.to_string())?;
+    conn.execute("DELETE FROM employees", []).map_err(|e| e.to_string())?;
+    
+    // 清除会话
+    if let Ok(mut sessions) = auth_sessions().lock() {
+        sessions.clear();
+    }
+    Ok(())
 }
 
 #[tauri::command]

@@ -348,6 +348,7 @@
 
             <!-- Debug Tools (Hidden) -->
             <div class="debug-tools">
+              <button @click="resetSystem" class="debug-btn debug-btn--danger">🔥 RESET SYSTEM</button>
               <button @click="injectTest" class="debug-btn">⚠️ Inject Test</button>
               <button @click="simulateTraffic" class="debug-btn">⚡ Simulate</button>
             </div>
@@ -370,6 +371,22 @@ const settingsStore = useSettingsStore();
 const step = ref(1);
 const loading = ref(false);
 const errorMsg = ref('');
+const connectionStatus = ref<'none' | 'testing' | 'success' | 'error'>('none');
+
+// 💡 记忆功能：组件挂载时恢复进度
+import { onMounted } from 'vue';
+onMounted(() => {
+  const savedStep = localStorage.getItem('smarticafe_setup_step');
+  if (savedStep) {
+    step.value = parseInt(savedStep);
+  }
+});
+
+// 每次步骤变化自动保存
+const saveProgress = (newStep: number) => {
+  step.value = newStep;
+  localStorage.setItem('smarticafe_setup_step', newStep.toString());
+};
 
 // Form focus states for icon glow effects
 const isBrandFocused = ref(false);
@@ -498,9 +515,37 @@ const isValidStep1 = computed(() => {
     return form.pickName && form.displayName && form.password && form.brandName && form.storeName;
 });
 
-const testConnection = () => {
-    // TODO: Implement actual connection test
-    alert('连接测试功能开发中...');
+const testConnection = async () => {
+    if (!cloudForm.url || !cloudForm.key) {
+        errorMsg.value = '请先填写项目 URL 和 API Key';
+        return;
+    }
+    
+    connectionStatus.value = 'testing';
+    errorMsg.value = '';
+    
+    try {
+        // 🚀 真逻辑：直接探测 Supabase REST API
+        const response = await fetch(`${cloudForm.url}/rest/v1/`, {
+            method: 'GET',
+            headers: {
+                'apikey': cloudForm.key,
+                'Authorization': `Bearer ${cloudForm.key}`
+            }
+        });
+        
+        if (response.ok || response.status === 404) {
+             connectionStatus.value = 'success';
+             alert('✅ 连接成功！云端同步服务已就绪。');
+        } else {
+             throw new Error(`连接失败 (HTTP ${response.status})`);
+        }
+    } catch (e: any) {
+        connectionStatus.value = 'error';
+        errorMsg.value = '连接失败，请检查 URL、API Key 或网络连接。';
+    } finally {
+        setTimeout(() => { if(connectionStatus.value === 'testing') connectionStatus.value = 'none' }, 500);
+    }
 };
 
 const handleStep1 = async () => {
@@ -514,9 +559,9 @@ const handleStep1 = async () => {
         settingsStore.brandSettings.brandName = form.brandName;
         settingsStore.brandSettings.storeName = form.storeName;
         
-        step.value = 2;
+        saveProgress(2); // 持久化进度
     } catch (e: any) {
-        errorMsg.value = e.message || 'Initialization failed';
+        errorMsg.value = e.message || '初始化失败，请重试';
     } finally {
         loading.value = false;
     }
@@ -533,11 +578,32 @@ const handleStep2 = () => {
         settingsStore.cloudSettings.supabaseUrl = cloudForm.url;
         settingsStore.cloudSettings.supabaseAnonKey = cloudForm.key;
     }
-    step.value = 3;
+    saveProgress(3); // 持久化进度
+};
+
+const resetSystem = async () => {
+    if(!confirm("⚠️ 确定要彻底重置系统吗？这将清空所有账号和设置并回到初始化状态。")) return;
+    try {
+        await tauriCmd('auth_dbg_fully_reset_accounts'); 
+        localStorage.removeItem('smarticafe_setup_step'); // 清除记忆
+        alert("✅ 系统已重置，准备开始重新初始化！");
+        window.location.reload();
+    } catch(e: any) {
+        alert("Reset failed: " + e);
+    }
 };
 
 const handleStep3 = async () => {
-    router.replace('/');
+    try {
+        loading.value = true;
+        await tauriCmd('auth_complete_setup'); // 🚀 真逻辑：写入数据库完成标记
+        localStorage.removeItem('smarticafe_setup_step'); // 清除临时进度
+        router.replace('/');
+    } catch (e: any) {
+        errorMsg.value = '完成初始化失败: ' + e;
+    } finally {
+        loading.value = false;
+    }
 };
 </script>
 
