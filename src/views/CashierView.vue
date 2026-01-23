@@ -32,6 +32,7 @@ import {
   handleMeituanParseError,
 } from '../utils/errorHandler';
 import { parseExcelData } from '../utils/saleSheetParser';
+import { toast } from '../composables/useToast';
 
 // System context
 const app = useAppStore();
@@ -118,6 +119,19 @@ const startShiftForm = ref({
   shift: '白班',
   employee: '',
 });
+
+const shiftPeople = ref<string[]>([]);
+
+const loadShiftPeople = async () => {
+  try {
+    const list = await auth.fetchPickList();
+    const employees = Array.isArray((list as any)?.employees) ? (list as any).employees : [];
+    const bosses = Array.isArray((list as any)?.bosses) ? (list as any).bosses : [];
+    shiftPeople.value = [...employees, ...bosses];
+  } catch {
+    shiftPeople.value = [];
+  }
+};
 
 const openTaxModal = () => {
     if (isReadonly.value) return; // Prevent if readonly
@@ -845,8 +859,11 @@ const openStartShiftModal = () => {
   startShiftForm.value = {
     date: todayYmd(),
     shift: defaultShiftByNow(),
-    employee: defaultEmployee || '管理员',
+    employee: defaultEmployee,
   };
+  ;(async () => {
+    await loadShiftPeople();
+  })();
   showStartShiftModal.value = true;
 };
 
@@ -883,7 +900,31 @@ const confirmStartShift = async () => {
   const date = String(startShiftForm.value.date || '').trim();
   const shift = String(startShiftForm.value.shift || '').trim();
   const employee = String(startShiftForm.value.employee || '').trim();
-  if (!date || !shift || !employee) return;
+  if (!date || !shift || !employee) {
+    toast.error('请填写完整：日期 / 班次 / 当班人');
+    return;
+  }
+
+  if (!auth.currentUser) {
+    if (!shiftPeople.value || shiftPeople.value.length === 0) {
+      await loadShiftPeople();
+    }
+    if (!shiftPeople.value || shiftPeople.value.length === 0) {
+      toast.error('当前未登录且未检测到本地账号，请先创建超管并登录后再开班');
+      return;
+    }
+  }
+
+  if (!shiftPeople.value || shiftPeople.value.length === 0) {
+    await loadShiftPeople();
+  }
+
+  const allowed = new Set(shiftPeople.value.map(s => String(s || '').trim()).filter(Boolean));
+  if (auth.currentUser?.username) allowed.add(String(auth.currentUser.username).trim());
+  if (!allowed.has(employee)) {
+    toast.error('当班人用户名不存在，请从列表选择或先在系统中创建账号');
+    return;
+  }
 
   try {
     await tauriCmd<string>('shift_record_insert', {
@@ -901,6 +942,7 @@ const confirmStartShift = async () => {
     });
   } catch (e) {
     console.error('Failed to create first shift record:', e);
+    toast.error('创建班次失败，请重试');
     return;
   }
 
@@ -2469,8 +2511,12 @@ onBeforeUnmount(() => {
                   v-model="startShiftForm.employee"
                   type="text"
                   class="w-full h-11 px-4 rounded-xl border border-gray-200 focus:border-brand-orange/40 focus:ring-4 focus:ring-orange-500/10 outline-none font-mono text-sm"
+                  list="start-shift-people"
                   placeholder="默认=当前登录人"
                 />
+                <datalist id="start-shift-people">
+                  <option v-for="p in shiftPeople" :key="p" :value="p" />
+                </datalist>
               </div>
 
               <button

@@ -67,7 +67,9 @@ const route = useRoute();
 
 const settingsStore = useSettingsStore();
 settingsStore.init();
-const { brandSettings, logoSettings } = storeToRefs(settingsStore);
+const { brandSettings, logoSettings, cloudSettings } = storeToRefs(settingsStore);
+
+const cloudEnabled = computed(() => !!cloudSettings.value.enabled);
 
 const storeChars = computed(() => {
   const value = brandSettings.value.storeName || '';
@@ -679,6 +681,18 @@ const handleNavClick = async (item: any) => {
               v-if="canEditShift"
               class="text-[9px] text-orange-400 animate-pulse"
             >●</span>
+          </div>
+
+          <div
+            class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-lg"
+            :title="cloudEnabled ? '云数据库已开启' : '云数据库已关闭（纯本地）'"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              :class="cloudEnabled ? 'text-brand-orange' : 'text-gray-400'"
+            >
+              <path d="M20 17.5a4.5 4.5 0 0 0-3.5-4.39A6 6 0 1 0 6 16H5a3 3 0 0 0 0 6h13a3 3 0 0 0 2-4.5z" />
+            </svg>
+            <span class="text-[11px] font-mono text-gray-600 leading-none">{{ cloudEnabled ? '云开' : '云关' }}</span>
           </div>
 
           <button
