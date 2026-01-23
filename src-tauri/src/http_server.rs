@@ -2,10 +2,10 @@
 // 提供REST API，让浏览器也能访问真实数据
 
 use axum::{
-    extract::{Query, State},
+    extract::{Query, State, Path},
     http::StatusCode,
     response::Json,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use rusqlite::OptionalExtension;
@@ -15,7 +15,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
 
-pub const API_HOST: [u8; 4] = [127, 0, 0, 1];
+pub const API_HOST: [u8; 4] = [0, 0, 0, 0];
 pub const API_PORT: u16 = 32521;
 
 // 共享的AppHandle
@@ -54,7 +54,7 @@ impl<T> ApiResponse<T> {
     }
 }
 
-// ==================== API路由 ====================
+// ==================== API路由处理 ====================
 
 // GET /api/products
 #[derive(Deserialize)]
@@ -117,7 +117,6 @@ async fn api_meituan_orders(
     Ok(ApiResponse::ok(serde_json::to_value(list).unwrap()))
 }
 
-// GET /api/shift/calculation
 #[derive(Deserialize)]
 struct ShiftQuery {
     date: Option<String>,
@@ -188,7 +187,6 @@ async fn api_shift_calculation(
     Ok(ApiResponse::ok(result))
 }
 
-// GET /api/finance/accounting
 async fn api_finance_accounting(
     State(state): State<Arc<AppState>>,
     Query(params): Query<ShiftQuery>,
@@ -198,7 +196,7 @@ async fn api_finance_accounting(
     let shift = params.shift.unwrap_or_else(|| String::from("白班"));
 
     let mut stmt_exp = conn
-        .prepare("SELECT item, amount, bar_pay, finance_pay FROM accounting_entries WHERE date_ymd = ?1 AND shift = ?2 AND entry_type = '支出' ORDER BY created_at ASC")
+        .prepare("SELECT item, amount, bar_pay, finance_pay FROM accounting_entries WHERE date_ymd = ?1 AND shift = ?2 AND (entry_type = '支出' OR entry_type = 'expense') ORDER BY created_at ASC")
         .map_err(|e| ApiResponse::<Value>::err(format!("prepare exp: {e}")))?;
 
     let expenses: Vec<Value> = stmt_exp
@@ -215,7 +213,7 @@ async fn api_finance_accounting(
         .collect();
 
     let mut stmt_inc = conn
-        .prepare("SELECT item, amount FROM accounting_entries WHERE date_ymd = ?1 AND shift = ?2 AND entry_type = '入账' ORDER BY created_at ASC")
+        .prepare("SELECT item, amount FROM accounting_entries WHERE date_ymd = ?1 AND shift = ?2 AND (entry_type = '入账' OR entry_type = 'income') ORDER BY created_at ASC")
         .map_err(|e| ApiResponse::<Value>::err(format!("prepare inc: {e}")))?;
 
     let incomes: Vec<Value> = stmt_inc
@@ -244,6 +242,90 @@ async fn api_finance_accounting(
     Ok(ApiResponse::ok(result))
 }
 
+// POST 接口：处理来自移动端的数据录入
+async fn api_pos_checkout(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<crate::models::PosCheckoutInput>,
+) -> Result<Json<ApiResponse<String>>, (StatusCode, Json<ApiResponse<String>>)> {
+    match crate::commands::sales::pos_checkout(state.app.clone(), input) {
+        Ok(order_id) => Ok(ApiResponse::ok(order_id)),
+        Err(e) => Err(ApiResponse::err(e)),
+    }
+}
+
+async fn api_shift_record_insert(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<crate::models::ShiftRecordInsertInput>,
+) -> Result<Json<ApiResponse<String>>, (StatusCode, Json<ApiResponse<String>>)> {
+    match crate::commands::sales::shift_record_insert(state.app.clone(), input) {
+        Ok(id) => Ok(ApiResponse::ok(id)),
+        Err(e) => Err(ApiResponse::err(e)),
+    }
+}
+
+async fn api_accounting_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<crate::models::AccountingEntriesCreateFromShiftInput>,
+) -> Result<Json<ApiResponse<usize>>, (StatusCode, Json<ApiResponse<usize>>)> {
+    match crate::commands::sales::accounting_entries_create_from_shift(state.app.clone(), input) {
+        Ok(count) => Ok(ApiResponse::ok(count)),
+        Err(e) => Err(ApiResponse::err(e)),
+    }
+}
+
+#[derive(Deserialize)]
+struct AuthLoginPayload {
+    input: crate::models::AuthLoginInput,
+}
+
+async fn api_auth_login(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<AuthLoginPayload>,
+) -> Result<Json<ApiResponse<Value>>, (StatusCode, Json<ApiResponse<Value>>)> {
+    match crate::commands::auth::auth_login(state.app.clone(), payload.input) {
+        Ok(session) => Ok(ApiResponse::ok(serde_json::to_value(session).unwrap())),
+        Err(e) => Err(ApiResponse::err(e)),
+    }
+}
+
+async fn api_auth_employee_login(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<Value>,
+) -> Result<Json<ApiResponse<Value>>, (StatusCode, Json<ApiResponse<Value>>)> {
+    let pick_name = payload["pick_name"].as_str().unwrap_or_default().to_string();
+    match crate::commands::auth::auth_employee_login(state.app.clone(), pick_name) {
+        Ok(session) => Ok(ApiResponse::ok(serde_json::to_value(session).unwrap())),
+        Err(e) => Err(ApiResponse::err(e)),
+    }
+}
+
+async fn api_auth_pick_list(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<ApiResponse<Value>>, (StatusCode, Json<ApiResponse<Value>>)> {
+    match crate::commands::auth::auth_pick_list(state.app.clone()) {
+        Ok(list) => Ok(ApiResponse::ok(serde_json::to_value(list).unwrap())),
+        Err(e) => Err(ApiResponse::err(e)),
+    }
+}
+
+// 通用的 RPC 桥接处理函数 (处理那些没有显式定义路由的简单命令)
+async fn api_rpc_handler(
+    State(state): State<Arc<AppState>>,
+    Path(cmd): Path<String>,
+    Json(_args): Json<Value>,
+) -> Result<Json<ApiResponse<Value>>, (StatusCode, Json<ApiResponse<Value>>)> {
+    // 这里可以根据 cmd 进行路由分发，目前作为一种兜底方案
+    match cmd.as_str() {
+        "auth_bootstrap_required" => {
+            match crate::commands::auth::auth_bootstrap_required(state.app.clone()) {
+                Ok(v) => Ok(ApiResponse::ok(Value::Bool(v))),
+                Err(e) => Err(ApiResponse::err(e)),
+            }
+        },
+        _ => Err(ApiResponse::err(format!("unsupported_rpc_cmd: {}", cmd))),
+    }
+}
+
 // ==================== 服务器启动 ====================
 
 pub async fn start_http_server(app: tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -258,9 +340,16 @@ pub async fn start_http_server(app: tauri::AppHandle) -> Result<(), Box<dyn std:
         .route("/products", get(api_products_list))
         .route("/meituan/orders", get(api_meituan_orders))
         .route("/shift/calculation", get(api_shift_calculation))
-        .route("/finance/accounting", get(api_finance_accounting));
+        .route("/shift/record", post(api_shift_record_insert))
+        .route("/finance/accounting", get(api_finance_accounting).post(api_accounting_create))
+        .route("/pos/checkout", post(api_pos_checkout))
+        .route("/auth/login", post(api_auth_login))
+        .route("/auth/employee_login", post(api_auth_employee_login))
+        .route("/auth/pick_list", get(api_auth_pick_list))
+        .route("/rpc/:cmd", post(api_rpc_handler));
 
     let app_router = Router::new()
+        .route("/", get(|| async { "🚀 Smarticafe Pro API Hub is running!" }))
         .nest("/api", api_routes)
         .layer(cors)
         .with_state(state);
