@@ -685,14 +685,35 @@ const handleNavClick = async (item: any) => {
 
           <div
             class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-lg"
-            :title="cloudEnabled ? '云数据库已开启' : '云数据库已关闭（纯本地）'"
+            :title="cloudEnabled ? 'Cloud Enabled' : 'Cloud Disabled'"
           >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              :class="cloudEnabled ? 'text-brand-orange' : 'text-gray-400'"
-            >
-              <path d="M20 17.5a4.5 4.5 0 0 0-3.5-4.39A6 6 0 1 0 6 16H5a3 3 0 0 0 0 6h13a3 3 0 0 0 2-4.5z" />
-            </svg>
-            <span class="text-[11px] font-mono text-gray-600 leading-none">{{ cloudEnabled ? '云开' : '云关' }}</span>
+            <div class="relative w-4 h-4">
+              <svg
+                class="absolute inset-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                :class="cloudEnabled ? 'text-emerald-600' : 'text-red-500'"
+              >
+                <path d="M20 17.5a4.5 4.5 0 0 0-3.5-4.39A6 6 0 1 0 6 16H5a3 3 0 0 0 0 6h13a3 3 0 0 0 2-4.5z" />
+              </svg>
+              <svg
+                class="absolute inset-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                :class="cloudEnabled ? 'text-emerald-600' : 'text-red-500'"
+              >
+                <path v-if="cloudEnabled" d="M8.2 13.2l2.3 2.3 5.6-5.6" />
+                <path v-else d="M9 9l6 6M15 9l-6 6" />
+              </svg>
+            </div>
           </div>
 
           <button
