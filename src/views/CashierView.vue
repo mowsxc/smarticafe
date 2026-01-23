@@ -2507,16 +2507,13 @@ onBeforeUnmount(() => {
 
               <div class="space-y-2">
                 <label class="text-[12px] font-medium text-gray-600">当班人</label>
-                <input
+                <select
                   v-model="startShiftForm.employee"
-                  type="text"
                   class="w-full h-11 px-4 rounded-xl border border-gray-200 focus:border-brand-orange/40 focus:ring-4 focus:ring-orange-500/10 outline-none font-mono text-sm"
-                  list="start-shift-people"
-                  placeholder="默认=当前登录人"
-                />
-                <datalist id="start-shift-people">
-                  <option v-for="p in shiftPeople" :key="p" :value="p" />
-                </datalist>
+                >
+                  <option value="" disabled>请选择当班人</option>
+                  <option v-for="p in shiftPeople" :key="p" :value="p">{{ p }}</option>
+                </select>
               </div>
 
               <button
